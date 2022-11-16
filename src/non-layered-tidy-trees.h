@@ -5,6 +5,8 @@ typedef struct tree_s tree_t;
 // ^{\normalfont A linked list of the indexes of left siblings and their lowest vertical coordinate.}^  
 typedef struct IYL_s  IYL_t;
 
+typedef void (*callback_t) (tree_t *, void *);
+
 struct tree_s {
   double w, h;          // ^{\normalfont Width and height.}^
   double x, y, prelim, mod, shift, change;
@@ -18,4 +20,4 @@ struct tree_s {
 
 struct IYL_s { double lowY; int index; IYL_t *nxt;};
 
-void layout(tree_t *);
+void layout(tree_t *, void *, callback_t);

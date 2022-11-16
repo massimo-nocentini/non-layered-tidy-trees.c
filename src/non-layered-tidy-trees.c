@@ -144,15 +144,16 @@ static void firstWalk(tree_t *t) {
   setExtremes(t);
 }
 
-
-
-static void secondWalk(tree_t *    t, double modsum) {
+static void secondWalk(tree_t *    t, double modsum, void *userdata, callback_t cb) {
   modsum+=t->mod;
   // ^{\normalfont Set absolute (non-relative) horizontal coordinate.}^
   t->x = t->prelim + modsum;
+  if (cb != NULL) cb (t, userdata);
   addChildSpacing(t);
-  for(int i = 0 ; i < t->cs ; i++) secondWalk(t->c[i],modsum);
+  for(int i = 0 ; i < t->cs ; i++) secondWalk(t->c[i],modsum, userdata, cb);
 }
 
-
-void layout(tree_t *t){ firstWalk(t); secondWalk(t,0); }
+void layout(tree_t *t, void *userdata, callback_t cb){ 
+  firstWalk(t);
+  secondWalk(t,0, userdata, cb);
+}
