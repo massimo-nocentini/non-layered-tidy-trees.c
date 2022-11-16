@@ -17,7 +17,7 @@ static IYL_t * updateIYL(double minY, int i, IYL_t * ih, IYL_t *out) {
 
 // ^{\normalfont Process change and shift to add intermediate spacing to mod.}^
 static void addChildSpacing(tree_t *t){
-  double d = 0, modsumdelta = 0;
+  double d = 0.0, modsumdelta = 0.0;
   for(int i = 0 ; i < t->cs; i++){
     d+=t->c[i]->shift;
     modsumdelta+=d + t->c[i]->change;
@@ -30,7 +30,7 @@ static double bottom(tree_t *t) { return t->y + t->h;  }
 static  void setExtremes(tree_t *t) {
   if(t->cs == 0){
     t->el = t; t->er = t;
-    t->msel = t->mser =0;
+    t->msel = t->mser =0.0;
   } else {
     t->el = t->c[0]->el; t->msel = t->c[0]->msel;
     t->er = t->c[t->cs-1]->er; t->mser = t->c[t->cs-1]->mser;
@@ -55,7 +55,6 @@ static void moveSubtree (tree_t *t, int i, int si, double dist) {
 
 static tree_t * nextLeftContour(tree_t *     t) {return t->cs==0 ? t->tl : t->c[0];}
 static tree_t * nextRightContour(tree_t *     t){return t->cs==0 ? t->tr : t->c[t->cs-1];}
-
 
 static void setLeftThread(tree_t *   t, int i, tree_t *     cl, double modsumcl) {
   tree_t *         li = t->c[0]->el;
@@ -121,18 +120,18 @@ static void positionRoot(tree_t *     t) {
            t->c[t->cs-1]->prelim +  t->c[t->cs-1]->w)/2 - t->w/2;
 }
 
-static void firstWalk(tree_t *t) {
+static void firstWalk(tree_t *t, void *userdata, callback_t cb) {
 
   if(t->cs == 0){ setExtremes(t); return; }
 
-  firstWalk(t->c[0]);
+  firstWalk(t->c[0], userdata, cb);
 
   // ^{\normalfont Create siblings in contour minimal vertical coordinate and index list.}^
   IYL_t out;
   IYL_t *ih =  updateIYL(bottom(t->c[0]->el),0,NULL,&out);
 
   for(int i = 1; i < t->cs; i++){
-    firstWalk(t->c[i]);
+    firstWalk(t->c[i], userdata, cb);
     //^{\normalfont Store lowest vertical coordinate while extreme nodes still point in current subtree_t *
 
     double minY = bottom(t->c[i]->er);
@@ -142,6 +141,7 @@ static void firstWalk(tree_t *t) {
   }
   positionRoot(t);
   setExtremes(t);
+  if (cb != NULL) cb (t, userdata);
 }
 
 static void secondWalk(tree_t *    t, double modsum, void *userdata, callback_t cb) {
@@ -153,7 +153,11 @@ static void secondWalk(tree_t *    t, double modsum, void *userdata, callback_t 
   for(int i = 0 ; i < t->cs ; i++) secondWalk(t->c[i],modsum, userdata, cb);
 }
 
-void layout(tree_t *t, void *userdata, callback_t cb){ 
-  firstWalk(t);
-  secondWalk(t,0, userdata, cb);
+void layout(tree_t *t, void *userdata, callback_t firstcb, callback_t secondcb){ 
+  firstWalk(t, userdata, firstcb);
+  secondWalk(t,0.0, userdata, secondcb);
+}
+
+void update_width_height (tree_t *t, double w, double h) {
+  t->w = w; t->h = h;
 }
