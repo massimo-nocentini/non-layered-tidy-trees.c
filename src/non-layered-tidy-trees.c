@@ -4,13 +4,13 @@
 #include <assert.h>
 #include "non-layered-tidy-trees.h"
 
-static IYL_t * updateIYL(double minY, int i, IYL_t *init) {
+static chain_t * updateIYL(double min, int i, chain_t *init) {
   
-  IYL_t * ih = init;
-  while(ih != NULL && minY >= ih->lowY) ih = ih->nxt;
+  chain_t * ih = init;
+  while(ih != NULL && min >= ih->low) ih = ih->nxt;
   
-  IYL_t *out = (IYL_t *) malloc (sizeof(IYL_t));
-  out->lowY = minY;
+  chain_t *out = (chain_t *) malloc (sizeof(chain_t));
+  out->low = min;
   out->index = i;
   out->nxt = ih;
 
@@ -27,7 +27,9 @@ static void addChildSpacing(tree_t *t){
   }
 }
 
-static double bottom(tree_t *t) { return t->y + t->h;  }
+static double bottom(tree_t *t, int vertically) { 
+  return vertically != 0 ? t->y + t->h : t->x + t->w; 
+}
 
 static void setExtremes(tree_t *t) {
   if(t->cs == 0){
@@ -51,8 +53,9 @@ static void distributeExtra(tree_t *t, int i, int si, double dist) {
 }
 
 static void moveSubtree (tree_t *t, int i, int si, double dist) {
-  // ^{\normalfont Move subtree by changing mod.}^
-  t->c[i]->mod+=dist; t->c[i]->msel+=dist; t->c[i]->mser+=dist;
+  t->c[i]->mod  += dist; 
+  t->c[i]->msel += dist; 
+  t->c[i]->mser += dist;
   distributeExtra(t, i, si, dist);
 }
 
@@ -82,19 +85,18 @@ static void setRightThread(tree_t *t, int i, tree_t *sr, double modsumsr) {
   t->c[i]->mser = t->c[i-1]->mser;
 }
 
-static void seperate(tree_t *t,int i,  IYL_t *init ){
-  // ^{\normalfont Right contour node of left siblings and its sum of modfiers.}^
- 
+static void seperate(tree_t *t, int vertically, int i, chain_t *init ){
+  
   tree_t *sr = t->c[i-1];
   double mssr = sr->mod;
 
-  // ^{\normalfont Left contour node of current subtree_t * and its sum of modfiers.}^
   tree_t *cl = t->c[i];
   double mscl = cl->mod;
 
-  IYL_t *ih = init;
+  chain_t *ih = init;
   while(sr != NULL && cl != NULL){
-    if(bottom(sr) > ih->lowY) ih = ih->nxt;
+    
+    if(bottom(sr, vertically) > ih->low) ih = ih->nxt;
     
     // ^{\normalfont How far to the left of the right side of sr is the left side of cl?}^
     double dist = (mssr + sr->prelim + sr->w) - (mscl + cl->prelim);
@@ -105,8 +107,8 @@ static void seperate(tree_t *t,int i,  IYL_t *init ){
       moveSubtree (t,i,ih->index,dist);
     }
 
-    double sy = bottom(sr), cy = bottom(cl);
-    // ^{\normalfont Advance highest node(s) and sum(s) of modifiers}^
+    double sy = bottom(sr, vertically), cy = bottom(cl, vertically);
+    
     if(sy <= cy){
       sr = nextRightContour(sr);
       if(sr!=NULL) mssr+=sr->mod;
@@ -123,33 +125,34 @@ static void seperate(tree_t *t,int i,  IYL_t *init ){
   else if(sr != NULL && cl == NULL) setRightThread(t,i,sr,mssr);
 }
 
-static void positionRoot(tree_t *t) {
+static void positionRoot(tree_t *t, int vertically) {
   // ^{\normalfont Position root between children, taking into account their mod.}^
   int last = t->cs-1;
+  double d = vertically != 0 ? t->w : t->h;
   t->prelim = ((t->c[0]->prelim + t->c[0]->mod + t->c[last]->mod +
-               t->c[last]->prelim + t->c[last]->w) - t->w) / 2.0;
+               t->c[last]->prelim + t->c[last]->w) - d) / 2.0;
 }
 
-static void firstWalk(tree_t *t, void *userdata, callback_t cb) {
+static void firstWalk(tree_t *t, int vertically, void *userdata, callback_t cb) {
 
   if(t->cs == 0){ setExtremes(t); }
   else {
-    firstWalk(t->c[0], userdata, cb);
+    firstWalk(t->c[0], vertically, userdata, cb);
 
-    IYL_t *ih = updateIYL(bottom(t->c[0]->el), 0, NULL);
+    chain_t *ih = updateIYL(bottom(t->c[0]->el, vertically), 0, NULL);
       
     for(int i = 1; i < t->cs; i++){
       
-      firstWalk(t->c[i], userdata, cb);
+      firstWalk(t->c[i], vertically, userdata, cb);
       
-      double minY = bottom(t->c[i]->er);
+      double min = bottom(t->c[i]->er, vertically);
       
-      seperate(t,i,ih);
+      seperate(t, vertically, i, ih);
       
-      ih = updateIYL(minY,i,ih);  
+      ih = updateIYL(min,i,ih);
     }
 
-    positionRoot(t);    
+    positionRoot(t, vertically);    
     setExtremes(t);
     
     if (cb != NULL) cb (t, userdata);
@@ -157,26 +160,30 @@ static void firstWalk(tree_t *t, void *userdata, callback_t cb) {
 
 }
 
-static void secondWalk(tree_t *    t, double modsum_init, void *userdata, callback_t cb) {
+static void secondWalk(tree_t *t, int vertically, double modsum_init, void *userdata, callback_t cb) {
   double modsum = modsum_init + t->mod;
-  // ^{\normalfont Set absolute (non-relative) horizontal coordinate.}^
-  t->x = t->prelim + modsum;
+
+  double d = t->prelim + modsum;
+  if (vertically != 0) t->x = d; else t->y = d;
+
   addChildSpacing(t);
+  
   if (cb != NULL) cb (t, userdata);
-  for(int i = 0 ; i < t->cs ; i++) secondWalk(t->c[i],modsum, userdata, cb);
+  
+  for(int i = 0 ; i < t->cs ; i++) secondWalk(t->c[i], vertically, modsum, userdata, cb);
 }
 
-static void fillyWalk (tree_t *t) {
-  double b = bottom (t);
+static void setupWalk (tree_t *t, int vertically) {
+  double b = bottom (t, vertically);
   for(int i = 0; i < t->cs; i++) {
     tree_t *child = t->c[i];
-    child->y += b;
-    fillyWalk (child);
+    if (vertically != 0) child->y += b; else child->x += b;
+    setupWalk (child, vertically);
   }
 }
 
-void layout(tree_t *t, void *userdata, callback_t firstcb, callback_t secondcb){
-  fillyWalk (t);
-  firstWalk(t, userdata, firstcb);
-  secondWalk(t,0.0, userdata, secondcb);
+void layout(tree_t *t, int vertically, void *userdata, callback_t firstcb, callback_t secondcb){
+  setupWalk (t, vertically);
+  firstWalk(t, vertically, userdata, firstcb);
+  secondWalk(t, vertically, 0.0, userdata, secondcb);
 }

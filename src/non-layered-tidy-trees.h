@@ -3,7 +3,7 @@
 typedef struct tree_s tree_t;
 
 // ^{\normalfont A linked list of the indexes of left siblings and their lowest vertical coordinate.}^  
-typedef struct IYL_s  IYL_t;
+typedef struct chain_s  chain_t;
 
 typedef void (*callback_t) (tree_t *, void *);
 
@@ -20,6 +20,6 @@ struct tree_s {
   tree_t *p;  // my parent.
 };
 
-struct IYL_s { double lowY; int index; IYL_t *nxt;};
+struct chain_s { double low; int index; chain_t *nxt;};
 
-void layout(tree_t *, void *, callback_t, callback_t);
+void layout(tree_t *, int, void *, callback_t, callback_t);
