@@ -21,5 +21,4 @@ struct tree_s {
 
 struct IYL_s { double lowY; int index; IYL_t *nxt;};
 
-void update_width_height (tree_t *, double, double);
 void layout(tree_t *, void *, callback_t, callback_t);

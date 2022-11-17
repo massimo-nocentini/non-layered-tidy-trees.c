@@ -2,12 +2,14 @@
 #include <stdlib.h>
 #include "non-layered-tidy-trees.h"
 
-static IYL_t * updateIYL(double minY, int i, IYL_t * ih, IYL_t *out) {
+static IYL_t * updateIYL(double minY, int i, IYL_t *init) {
   // ^{\normalfont Remove siblings that are hidden by the new subtree_t *
 
+  IYL_t * ih = init;
   while(ih != NULL && minY >= ih->lowY) ih = ih->nxt;
   // ^{\normalfont Prepend the new subtree_t *
 
+  IYL_t *out = (IYL_t *) malloc (sizeof (IYL_t));
   out->lowY = minY;
   out->index = i;
   out->nxt = ih;
@@ -53,8 +55,8 @@ static void moveSubtree (tree_t *t, int i, int si, double dist) {
   distributeExtra(t, i, si, dist);
 }
 
-static tree_t * nextLeftContour(tree_t *     t) {return t->cs==0 ? t->tl : t->c[0];}
-static tree_t * nextRightContour(tree_t *     t){return t->cs==0 ? t->tr : t->c[t->cs-1];}
+static tree_t * nextLeftContour (tree_t *t) {return t->cs==0 ? t->tl : t->c[0];}
+static tree_t * nextRightContour(tree_t *t) {return t->cs==0 ? t->tr : t->c[t->cs-1];}
 
 static void setLeftThread(tree_t *   t, int i, tree_t *     cl, double modsumcl) {
   tree_t *         li = t->c[0]->el;
@@ -127,8 +129,7 @@ static void firstWalk(tree_t *t, void *userdata, callback_t cb) {
   firstWalk(t->c[0], userdata, cb);
 
   // ^{\normalfont Create siblings in contour minimal vertical coordinate and index list.}^
-  IYL_t out;
-  IYL_t *ih =  updateIYL(bottom(t->c[0]->el),0,NULL,&out);
+  IYL_t *ih =  updateIYL(bottom(t->c[0]->el),0,NULL);
 
   for(int i = 1; i < t->cs; i++){
     firstWalk(t->c[i], userdata, cb);
@@ -136,8 +137,7 @@ static void firstWalk(tree_t *t, void *userdata, callback_t cb) {
 
     double minY = bottom(t->c[i]->er);
     seperate(t,i,ih);
-    IYL_t each;
-    ih = updateIYL(minY,i,ih,&each);
+    ih = updateIYL(minY,i,ih);
   }
   positionRoot(t);
   setExtremes(t);
@@ -156,8 +156,4 @@ static void secondWalk(tree_t *    t, double modsum, void *userdata, callback_t 
 void layout(tree_t *t, void *userdata, callback_t firstcb, callback_t secondcb){ 
   firstWalk(t, userdata, firstcb);
   secondWalk(t,0.0, userdata, secondcb);
-}
-
-void update_width_height (tree_t *t, double w, double h) {
-  t->w = w; t->h = h;
 }
