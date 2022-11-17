@@ -16,7 +16,8 @@ struct tree_s {
   tree_t *el;
   tree_t *er;          // ^{\normalfont Extreme left and right nodes.}^ 
   double msel, mser;    // ^{\normalfont Sum of modifiers at the extreme nodes.}^ 
-  tree_t **c; int cs;     // ^{\normalfont Array of children and number of children.}^ 
+  tree_t **c; int cs;     // ^{\normalfont Array of children and number of children.}^
+  tree_t *p;  // my parent.
 };
 
 struct IYL_s { double lowY; int index; IYL_t *nxt;};
