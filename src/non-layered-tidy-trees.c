@@ -4,14 +4,17 @@
 #include <assert.h>
 #include "non-layered-tidy-trees.h"
 
-static void updateIYL(double minY, int i, IYL_t *init, IYL_t *out) {
+static IYL_t * updateIYL(double minY, int i, IYL_t *init) {
   
   IYL_t * ih = init;
   while(ih != NULL && minY >= ih->lowY) ih = ih->nxt;
   
+  IYL_t *out = (IYL_t *) malloc (sizeof(IYL_t));
   out->lowY = minY;
   out->index = i;
   out->nxt = ih;
+
+  return out;
 }
 
 // ^{\normalfont Process change and shift to add intermediate spacing to mod.}^
@@ -133,30 +136,20 @@ static void firstWalk(tree_t *t, void *userdata, callback_t cb) {
   else {
     firstWalk(t->c[0], userdata, cb);
 
-    // ^{\normalfont Create siblings in contour minimal vertical coordinate and index list.}^
-    IYL_t *each = NULL;
-    IYL_t *ih = (IYL_t *) malloc (sizeof(IYL_t));
-
-    updateIYL(bottom(t->c[0]->el), 0, NULL, ih);
+    IYL_t *ih = updateIYL(bottom(t->c[0]->el), 0, NULL);
       
     for(int i = 1; i < t->cs; i++){
       
       firstWalk(t->c[i], userdata, cb);
       
-      //^{\normalfont Store lowest vertical coordinate while extreme nodes still point in current subtree_t *
-
       double minY = bottom(t->c[i]->er);
       
       seperate(t,i,ih);
       
-      each = (IYL_t *) malloc (sizeof(IYL_t));
-      updateIYL(minY,i,ih,each);
-      
-      ih = each;
+      ih = updateIYL(minY,i,ih);  
     }
 
-    positionRoot(t);
-    
+    positionRoot(t);    
     setExtremes(t);
     
     if (cb != NULL) cb (t, userdata);
@@ -173,17 +166,17 @@ static void secondWalk(tree_t *    t, double modsum_init, void *userdata, callba
   for(int i = 0 ; i < t->cs ; i++) secondWalk(t->c[i],modsum, userdata, cb);
 }
 
-static void fillyrec (tree_t *t) {
+static void fillyWalk (tree_t *t) {
   double b = bottom (t);
   for(int i = 0; i < t->cs; i++) {
     tree_t *child = t->c[i];
     child->y += b;
-    fillyrec (child);
+    fillyWalk (child);
   }
 }
 
 void layout(tree_t *t, void *userdata, callback_t firstcb, callback_t secondcb){
-  fillyrec (t);
+  fillyWalk (t);
   firstWalk(t, userdata, firstcb);
   secondWalk(t,0.0, userdata, secondcb);
 }
