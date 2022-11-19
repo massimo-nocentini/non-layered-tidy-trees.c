@@ -99,7 +99,8 @@ static void seperate(tree_t *t, int vertically, int i, chain_t *init ){
     if(bottom(sr, vertically) > ih->low) ih = ih->nxt;
     
     // ^{\normalfont How far to the left of the right side of sr is the left side of cl?}^
-    double dist = (mssr + sr->prelim + sr->w) - (mscl + cl->prelim);
+    double srd = vertically != 0 ? sr->w : sr->h;
+    double dist = (mssr + sr->prelim + srd) - (mscl + cl->prelim);
     
     if(dist > 0.0){
       mscl+=dist;
@@ -128,9 +129,8 @@ static void seperate(tree_t *t, int vertically, int i, chain_t *init ){
 static void positionRoot(tree_t *t, int vertically) {
   // ^{\normalfont Position root between children, taking into account their mod.}^
   int last = t->cs-1;
-  double d = vertically != 0 ? t->w : t->h;
-  t->prelim = ((t->c[0]->prelim + t->c[0]->mod + t->c[last]->mod +
-               t->c[last]->prelim + t->c[last]->w) - d) / 2.0;
+  double d = vertically != 0 ? t->c[last]->w - t->w : t->c[last]->h - t->h;
+  t->prelim = (t->c[0]->prelim + t->c[0]->mod + t->c[last]->mod + t->c[last]->prelim + d) / 2.0;
 }
 
 static void firstWalk(tree_t *t, int vertically, void *userdata, callback_t cb) {
@@ -164,7 +164,14 @@ static void secondWalk(tree_t *t, int vertically, double modsum_init, void *user
   double modsum = modsum_init + t->mod;
 
   double d = t->prelim + modsum;
-  if (vertically != 0) t->x = d; else t->y = d;
+  if (vertically != 0) {
+    t->x = d + (t->w / 2.0);
+    t->y += t->h / 2.0;
+  }
+  else {
+    t->y = d + (t->h / 2.0);
+    t->x += t->w / 2.0;
+  }
 
   addChildSpacing(t);
   
