@@ -23,6 +23,6 @@ typedef struct chain_s {
   struct chain_s *nxt;
 } chain_t;
 
-typedef void (*callback_t) (tree_t *, void *);
+typedef void (*callback_t) (tree_t *, double, double, void *);
 
 void layout(tree_t *, int, int, void *, callback_t, callback_t);

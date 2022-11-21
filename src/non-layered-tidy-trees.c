@@ -161,7 +161,17 @@ static void firstWalk(tree_t *t, int vertically, void *userdata, callback_t cb) 
     positionRoot(t, vertically);    
     setExtremes(t);
     
-    if (cb != NULL) cb (t, userdata);
+    double x = 0.0, y = 0.0;
+
+    if (vertically != 0) {
+      x = t->prelim;
+      y = t->y;
+    } else {
+      x = t->x;
+      y = t->prelim;
+    }
+
+    if (cb != NULL) cb (t, x, y, userdata);
   }
 
 }
@@ -189,7 +199,7 @@ static void secondWalk(tree_t *t, int vertically, int centeredxy, double modsum_
 
   addChildSpacing(t);
   
-  if (cb != NULL) cb (t, userdata);
+  if (cb != NULL) cb (t, t->x, t->y, userdata);
   
   for(int i = 0 ; i < t->cs ; i++) secondWalk(t->c[i], vertically, centeredxy, modsum, userdata, cb);
 }
