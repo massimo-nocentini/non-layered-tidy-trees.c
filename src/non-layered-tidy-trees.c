@@ -96,6 +96,8 @@ static void seperate(tree_t *t, int vertically, int i, chain_t *init){
   tree_t *cl = t->c[i];
   double mscl = cl->mod;
 
+  int first = 1;
+
   chain_t *ih = init;
   while(sr != NULL && cl != NULL){
     
@@ -105,11 +107,13 @@ static void seperate(tree_t *t, int vertically, int i, chain_t *init){
     double srd = vertically != 0 ? sr->w : sr->h;
     double dist = (mssr + sr->prelim + srd) - (mscl + cl->prelim);
     
-    if(dist > 0.0){
-      mscl+=dist;
+    if(dist > 0.0 || (first != 0 && dist < 0.0)){
+      mscl += dist;
       //assert (ih != NULL);
       moveSubtree (t,i,ih->index,dist);
     }
+    
+    first = 0;
 
     double sy = bottom(sr, vertically);
     double cy = bottom(cl, vertically);
