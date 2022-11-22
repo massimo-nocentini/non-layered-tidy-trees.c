@@ -3,6 +3,7 @@
  * A type for hierarchies that act as trees.
  */
 typedef struct tree_s {
+  int idx;
   double w, h;                  // Width and height.
   double x, y, prelim, mod, shift, change;
   struct tree_s *tl;
@@ -23,6 +24,6 @@ typedef struct chain_s {
   struct chain_s *nxt;
 } chain_t;
 
-typedef void (*callback_t) (tree_t *, double, double, void *);
+typedef void (*callback_t) (tree_t *, double, double, double, double, void *);
 
 void layout(tree_t *, int, int, void *, callback_t, callback_t);

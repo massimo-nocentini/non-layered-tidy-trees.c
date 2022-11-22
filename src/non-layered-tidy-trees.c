@@ -139,17 +139,17 @@ static void positionRoot(tree_t *t, int vertically) {
   t->prelim = (t->c[0]->prelim + t->c[0]->mod + t->c[last]->prelim + t->c[last]->mod + d) / 2.0;
 }
 
-static void firstWalk(tree_t *t, int vertically, void *userdata, callback_t cb) {
+static void firstWalk(tree_t *t, int vertically, int centeredxy, void *userdata, callback_t cb) {
 
   if(t->cs == 0){ setExtremes(t); }
   else {
-    firstWalk(t->c[0], vertically, userdata, cb);
+    firstWalk(t->c[0], vertically, centeredxy, userdata, cb);
 
     chain_t *ih = updateIYL(bottom(t->c[0]->el, vertically), 0, NULL);
       
     for(int i = 1; i < t->cs; i++){
       
-      firstWalk(t->c[i], vertically, userdata, cb);
+      firstWalk(t->c[i], vertically, centeredxy, userdata, cb);
       
       double min = bottom(t->c[i]->er, vertically);
       
@@ -161,17 +161,26 @@ static void firstWalk(tree_t *t, int vertically, void *userdata, callback_t cb) 
     positionRoot(t, vertically);    
     setExtremes(t);
     
-    double x = 0.0, y = 0.0;
+    if (cb != NULL) {
 
-    if (vertically != 0) {
-      x = t->prelim;
-      y = t->y;
-    } else {
-      x = t->x;
-      y = t->prelim;
+      double x = 0.0, y = 0.0;
+      double d = t->prelim + t->mod;
+
+      if (vertically != 0) {
+        x = d;
+        y = t->y;
+      } else {
+        x = t->x;
+        y = d;
+      }
+
+      if (centeredxy != 0) {
+        x += t->w / 2.0;
+        y += t->h / 2.0;
+      }
+
+      cb (t, x, y, t->w, t->h, userdata);
     }
-
-    if (cb != NULL) cb (t, x, y, userdata);
   }
 
 }
@@ -199,7 +208,7 @@ static void secondWalk(tree_t *t, int vertically, int centeredxy, double modsum_
 
   addChildSpacing(t);
   
-  if (cb != NULL) cb (t, t->x, t->y, userdata);
+  if (cb != NULL) cb (t, t->x, t->y, t->w, t->h, userdata);
   
   for(int i = 0 ; i < t->cs ; i++) secondWalk(t->c[i], vertically, centeredxy, modsum, userdata, cb);
 }
@@ -215,6 +224,6 @@ static void setupWalk (tree_t *t, int vertically) {
 
 void layout(tree_t *t, int vertically, int centeredxy, void *userdata, callback_t firstcb, callback_t secondcb){
   setupWalk (t, vertically);
-  firstWalk(t, vertically, userdata, firstcb);
+  firstWalk(t, vertically, centeredxy, userdata, firstcb);
   secondWalk(t, vertically, centeredxy, 0.0, userdata, secondcb);
 }
