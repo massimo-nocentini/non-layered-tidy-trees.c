@@ -4,10 +4,20 @@
 #include <assert.h>
 #include "non-layered-tidy-trees.h"
 
-static chain_t * updateIYL(double min, int i, chain_t *init) {
+static void free_chain (chain_t *c) {
+  if (c->nxt != NULL) free_chain (c->nxt);
+  free (c);
+}
+
+static chain_t * update_chain (double min, int i, chain_t *init) {
   
   chain_t * ih = init;
-  while(ih != NULL && min >= ih->low) ih = ih->nxt;
+
+  while(ih != NULL && min >= ih->low) {
+    chain_t *nxt = ih->nxt;
+    free (ih);  
+    ih = nxt;
+  }
   
   chain_t *out = (chain_t *) malloc (sizeof(chain_t));
   out->low = min;
@@ -96,10 +106,9 @@ static void seperate(tree_t *t, int vertically, int i, chain_t *init){
   tree_t *cl = t->c[i];
   double mscl = cl->mod;
 
-  int first = 1;
-
   chain_t *ih = init;
-  while(sr != NULL && cl != NULL){
+
+  for (int iterations = 0; sr != NULL && cl != NULL; iterations++){
     
     if(bottom(sr, vertically) > ih->low) ih = ih->nxt;
     
@@ -107,13 +116,11 @@ static void seperate(tree_t *t, int vertically, int i, chain_t *init){
     double srd = vertically != 0 ? sr->w : sr->h;
     double dist = (mssr + sr->prelim + srd) - (mscl + cl->prelim);
     
-    if(dist > 0.0 || (first != 0 && dist < 0.0)){
+    if(dist > 0.0 || (iterations == 0 && dist < 0.0)){
       mscl += dist;
       //assert (ih != NULL);
       moveSubtree (t,i,ih->index,dist);
     }
-    
-    first = 0;
 
     double sy = bottom(sr, vertically);
     double cy = bottom(cl, vertically);
@@ -147,9 +154,10 @@ static void firstWalk(tree_t *t, int vertically, int centeredxy, void *userdata,
 
   if(t->cs == 0){ setExtremes(t); }
   else {
+    
     firstWalk(t->c[0], vertically, centeredxy, userdata, cb);
 
-    chain_t *ih = updateIYL(bottom(t->c[0]->el, vertically), 0, NULL);
+    chain_t *ih = update_chain (bottom(t->c[0]->el, vertically), 0, NULL);
       
     for(int i = 1; i < t->cs; i++){
       
@@ -159,8 +167,10 @@ static void firstWalk(tree_t *t, int vertically, int centeredxy, void *userdata,
       
       seperate(t, vertically, i, ih);
       
-      ih = updateIYL(min,i,ih);
+      ih = update_chain (min,i,ih);
     }
+
+    free_chain (ih);
 
     positionRoot(t, vertically);    
     setExtremes(t);
