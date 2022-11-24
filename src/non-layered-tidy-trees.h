@@ -1,4 +1,21 @@
 
+#ifdef _WIN32
+	#define EXPORT __declspec(dllexport)
+#else
+	#define EXPORT __attribute__((visibility("default")))
+#endif
+
+#ifdef _WIN32
+	#if defined __LP64__ || defined _WIN64
+		#define CallingConvention __attribute__((ms_abi))
+	#else
+		#define CallingConvention __stdcall
+	#endif
+#else
+	#define CallingConvention
+#endif
+
+
 /*
  * A type for hierarchies that act as trees.
  */
@@ -26,4 +43,4 @@ typedef struct chain_s {
 
 typedef void (*callback_t) (tree_t *, double, double, double, double, void *);
 
-void layout(tree_t *, int, int, void *, callback_t, callback_t);
+EXPORT void CallingConvention layout(tree_t *, int, int, void *, callback_t, callback_t);

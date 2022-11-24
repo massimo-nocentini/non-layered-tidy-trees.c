@@ -236,7 +236,7 @@ static void setupWalk (tree_t *t, int vertically) {
   }
 }
 
-void layout(tree_t *t, int vertically, int centeredxy, void *userdata, callback_t firstcb, callback_t secondcb){
+EXPORT void CallingConvention layout(tree_t *t, int vertically, int centeredxy, void *userdata, callback_t firstcb, callback_t secondcb){
   setupWalk (t, vertically);
   firstWalk(t, vertically, centeredxy, userdata, firstcb);
   secondWalk(t, vertically, centeredxy, 0.0, userdata, secondcb);
