@@ -4,6 +4,7 @@ try {
 		try {
 			checkout scm
 bat '''
+cd src
 make mingw
 '''
 		} finally {
