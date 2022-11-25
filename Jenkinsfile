@@ -6,9 +6,12 @@ try {
 bat '''
 cd src
 make mingw
+zip -r libnonlayeredtidytrees.zip src/libnonlayeredtidytrees.dll src/non-layered-tidy-trees.h	
+
 '''
 		} finally {
-			//cleanWs()
+			archiveArtifacts artifacts: 'libnonlayeredtidytrees.zip'
+			cleanWs()
 		}
 	}
 } catch(e) {
