@@ -6,6 +6,7 @@ try {
 bat '''
 cd src
 make mingw
+cd ..
 zip -r libnonlayeredtidytrees.zip src/libnonlayeredtidytrees.dll src/non-layered-tidy-trees.h	
 
 '''
