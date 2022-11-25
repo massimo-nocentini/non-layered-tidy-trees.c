@@ -98,7 +98,7 @@ static void setRightThread(tree_t *t, int i, tree_t *sr, double modsumsr) {
   t->c[i]->mser = t->c[i-1]->mser;
 }
 
-static void seperate(tree_t *t, int vertically, int i, chain_t *init){
+static void separate(tree_t *t, int vertically, int i, chain_t *init, void *userdata, contourpairs_t pairscb) {
   
   tree_t *sr = t->c[i-1];
   double mssr = sr->mod;
@@ -115,6 +115,8 @@ static void seperate(tree_t *t, int vertically, int i, chain_t *init){
     // How far to the left of the right side of sr is the left side of cl?
     double srd = vertically != 0 ? sr->w : sr->h;
     double dist = (mssr + sr->prelim + srd) - (mscl + cl->prelim);
+
+    if (pairscb != NULL) pairscb (sr, cl, dist, userdata);
     
     if(dist > 0.0 || (iterations == 0 && dist < 0.0)){
       mscl += dist;
@@ -150,22 +152,22 @@ static void positionRoot(tree_t *t, int vertically) {
   t->prelim = (t->c[0]->prelim + t->c[0]->mod + t->c[last]->prelim + t->c[last]->mod + d) / 2.0;
 }
 
-static void firstWalk(tree_t *t, int vertically, int centeredxy, void *userdata, callback_t cb) {
+static void firstWalk(tree_t *t, int vertically, int centeredxy, void *userdata, callback_t cb, contourpairs_t pairscb) {
 
   if(t->cs == 0){ setExtremes(t); }
   else {
     
-    firstWalk(t->c[0], vertically, centeredxy, userdata, cb);
+    firstWalk(t->c[0], vertically, centeredxy, userdata, cb, pairscb);
 
     chain_t *ih = update_chain (bottom(t->c[0]->el, vertically), 0, NULL);
       
     for(int i = 1; i < t->cs; i++){
       
-      firstWalk(t->c[i], vertically, centeredxy, userdata, cb);
+      firstWalk(t->c[i], vertically, centeredxy, userdata, cb, pairscb);
       
       double min = bottom(t->c[i]->er, vertically);
       
-      seperate(t, vertically, i, ih);
+      separate(t, vertically, i, ih, userdata, pairscb);
       
       ih = update_chain (min,i,ih);
     }
@@ -214,8 +216,7 @@ static void secondWalk(tree_t *t, int vertically, int centeredxy, double modsum_
   if (vertically != 0) {
     t->x = d + xoffset;
     t->y += yoffset;
-  }
-  else {
+  } else {
     t->x += xoffset;
     t->y = d + yoffset;
   }
@@ -236,8 +237,8 @@ static void setupWalk (tree_t *t, int vertically) {
   }
 }
 
-EXPORT void CallingConvention layout(tree_t *t, int vertically, int centeredxy, void *userdata, callback_t firstcb, callback_t secondcb){
+EXPORT void CallingConvention layout(tree_t *t, int vertically, int centeredxy, void *userdata, callback_t firstcb, callback_t secondcb, contourpairs_t pairscb){
   setupWalk (t, vertically);
-  firstWalk(t, vertically, centeredxy, userdata, firstcb);
+  firstWalk(t, vertically, centeredxy, userdata, firstcb, pairscb);
   secondWalk(t, vertically, centeredxy, 0.0, userdata, secondcb);
 }

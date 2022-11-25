@@ -43,4 +43,6 @@ typedef struct chain_s {
 
 typedef void (*callback_t) (tree_t *, double, double, double, double, void *);
 
-EXPORT void CallingConvention layout(tree_t *, int, int, void *, callback_t, callback_t);
+typedef void (*contourpairs_t) (tree_t *, tree_t *, double, void *);
+
+EXPORT void CallingConvention layout(tree_t *, int, int, void *, callback_t, callback_t, contourpairs_t);
