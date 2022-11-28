@@ -115,14 +115,14 @@ static void separate(tree_t *t, int vertically, int i, chain_t *init, void *user
     // How far to the left of the right side of sr is the left side of cl?
     double srd = vertically != 0 ? sr->w : sr->h;
     double dist = (mssr + sr->prelim + srd) - (mscl + cl->prelim);
-
-    if (pairscb != NULL) pairscb (sr, cl, dist, userdata);
     
     if(dist > 0.0 || (iterations == 0 && dist < 0.0)){
       mscl += dist;
       //assert (ih != NULL);
       moveSubtree (t,i,ih->index,dist);
     }
+
+    if (pairscb != NULL) pairscb (sr, cl, dist, userdata);
 
     double sy = bottom(sr, vertically);
     double cy = bottom(cl, vertically);
