@@ -21,6 +21,8 @@
  */
 typedef struct tree_s {
   int idx;
+  int level;
+  int childno;
   double w, h;                  // Width and height.
   double x, y, prelim, mod, shift, change;
   struct tree_s *tl;

@@ -228,17 +228,23 @@ static void secondWalk(tree_t *t, int vertically, int centeredxy, double modsum_
   for(int i = 0 ; i < t->cs ; i++) secondWalk(t->c[i], vertically, centeredxy, modsum, userdata, cb);
 }
 
-static void setupWalk (tree_t *t, int vertically) {
+static void setupWalk (tree_t *t, int level, int vertically) {
+  t->level = level;
   double b = bottom (t, vertically);
   for(int i = 0; i < t->cs; i++) {
     tree_t *child = t->c[i];
+
+    child->childno = i;
+    child->p = t;
+    
     if (vertically != 0) child->y += b; else child->x += b;
-    setupWalk (child, vertically);
+    
+    setupWalk (child, level + 1, vertically);
   }
 }
 
 EXPORT void CallingConvention layout(tree_t *t, int vertically, int centeredxy, void *userdata, callback_t firstcb, callback_t secondcb, contourpairs_t pairscb){
-  setupWalk (t, vertically);
+  setupWalk (t, 0, vertically);
   firstWalk(t, vertically, centeredxy, userdata, firstcb, pairscb);
   secondWalk(t, vertically, centeredxy, 0.0, userdata, secondcb);
 }
