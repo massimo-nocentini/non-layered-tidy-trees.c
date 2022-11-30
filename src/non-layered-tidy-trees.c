@@ -37,7 +37,7 @@ static void addChildSpacing(tree_t *t){
   }
 }
 
-static double bottom(tree_t *t, int vertically) { 
+EXPORT double CallingConvention bottom(tree_t *t, int vertically) { 
   return vertically != 0 ? t->y + t->h : t->x + t->w; 
 }
 
@@ -208,6 +208,8 @@ static void secondWalk(tree_t *t, int vertically, int centeredxy, double modsum_
 
   double xoffset = 0.0, yoffset = 0.0;
 
+  t->centeredxy = centeredxy;
+  
   if (centeredxy != 0) {
     xoffset = t->w / 2.0;
     yoffset = t->h / 2.0;
