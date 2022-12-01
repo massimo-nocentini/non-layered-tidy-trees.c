@@ -4,6 +4,15 @@
 #include <assert.h>
 #include "non-layered-tidy-trees.h"
 
+/*
+ * A linked list of the indexes of left siblings and their lowest vertical coordinate.
+ */
+typedef struct chain_s { 
+  double low; 
+  int index; 
+  struct chain_s *nxt;
+} chain_t;
+
 static void free_chain (chain_t *c) {
   if (c->nxt != NULL) free_chain (c->nxt);
   free (c);
@@ -38,7 +47,9 @@ static void addChildSpacing(tree_t *t){
 }
 
 EXPORT double CallingConvention bottom(tree_t *t, int vertically) { 
-  return vertically != 0 ? t->y + t->h : t->x + t->w; 
+  return vertically != 0 ? 
+          t->y + (t->centeredxy == 1 ? t->h / 2.0 : t->h) : 
+          t->x + (t->centeredxy == 1 ? t->w / 2.0 : t->w);
 }
 
 static void setExtremes(tree_t *t) {
@@ -98,7 +109,7 @@ static void setRightThread(tree_t *t, int i, tree_t *sr, double modsumsr) {
   t->c[i]->mser = t->c[i-1]->mser;
 }
 
-static void separate(tree_t *t, int vertically, int i, chain_t *init, void *userdata, contourpairs_t pairscb) {
+static void separate(treeinput_t * input, tree_t *t, int i, chain_t *init) {
   
   tree_t *sr = t->c[i-1];
   double mssr = sr->mod;
@@ -110,10 +121,10 @@ static void separate(tree_t *t, int vertically, int i, chain_t *init, void *user
 
   for (int iterations = 0; sr != NULL && cl != NULL; iterations++){
     
-    if(bottom(sr, vertically) > ih->low) ih = ih->nxt;
+    if(bottom(sr, input->vertically) > ih->low) ih = ih->nxt;
     
     // How far to the left of the right side of sr is the left side of cl?
-    double srd = vertically != 0 ? sr->w : sr->h;
+    double srd = input->vertically != 0 ? sr->w : sr->h;
     double dist = (mssr + sr->prelim + srd) - (mscl + cl->prelim);
     
     if(dist > 0.0 || (iterations == 0 && dist < 0.0)){
@@ -122,10 +133,10 @@ static void separate(tree_t *t, int vertically, int i, chain_t *init, void *user
       moveSubtree (t,i,ih->index,dist);
     }
 
-    if (pairscb != NULL) pairscb (sr, cl, dist, userdata);
+    if (input->cpairscb != NULL) input->cpairscb (sr, cl, dist, input->cpairsud);
 
-    double sy = bottom(sr, vertically);
-    double cy = bottom(cl, vertically);
+    double sy = bottom(sr, input->vertically);
+    double cy = bottom(cl, input->vertically);
     
     if(sy <= cy){
       sr = nextRightContour(sr);
@@ -152,70 +163,52 @@ static void positionRoot(tree_t *t, int vertically) {
   t->prelim = (t->c[0]->prelim + t->c[0]->mod + t->c[last]->prelim + t->c[last]->mod + d) / 2.0;
 }
 
-static void firstWalk(tree_t *t, int vertically, int centeredxy, void *userdata, callback_t cb, contourpairs_t pairscb) {
+static void firstWalk(treeinput_t * input, tree_t * t) {
 
   if(t->cs == 0){ setExtremes(t); }
   else {
     
-    firstWalk(t->c[0], vertically, centeredxy, userdata, cb, pairscb);
+    firstWalk(input, t->c[0]);
 
-    chain_t *ih = update_chain (bottom(t->c[0]->el, vertically), 0, NULL);
+    chain_t *ih = update_chain (bottom(t->c[0]->el, input->vertically), 0, NULL);
       
     for(int i = 1; i < t->cs; i++){
       
-      firstWalk(t->c[i], vertically, centeredxy, userdata, cb, pairscb);
+      firstWalk(input, t->c[i]);
       
-      double min = bottom(t->c[i]->er, vertically);
+      double min = bottom(t->c[i]->er, input->vertically);
       
-      separate(t, vertically, i, ih, userdata, pairscb);
+      separate(input, t, i, ih);
       
       ih = update_chain (min,i,ih);
     }
 
     free_chain (ih);
 
-    positionRoot(t, vertically);    
+    positionRoot(t, input->vertically);
+
     setExtremes(t);
-    
-    if (cb != NULL) {
-
-      double x = 0.0, y = 0.0;
-      double d = t->prelim + t->mod;
-
-      if (vertically != 0) {
-        x = d;
-        y = t->y;
-      } else {
-        x = t->x;
-        y = d;
-      }
-
-      if (centeredxy != 0) {
-        x += t->w / 2.0;
-        y += t->h / 2.0;
-      }
-
-      cb (t, x, y, t->w, t->h, userdata);
-    }
   }
-
 }
 
-static void secondWalk(tree_t *t, int vertically, int centeredxy, double modsum_init, void *userdata, callback_t cb) {
+static void secondWalk(treeinput_t * input, tree_t *t, double modsum_init) {
   double modsum = modsum_init + t->mod;
 
   double d = t->prelim + modsum;
 
-  double xoffset = 0.0, yoffset = 0.0;
+  double xoffset, yoffset;
 
-  t->centeredxy = centeredxy;
-  
-  if (centeredxy != 0) {
+  if (input->centeredxy == 1) {
     xoffset = t->w / 2.0;
     yoffset = t->h / 2.0;
+    t->centeredxy = 1;
+  } else {
+    xoffset = 0.0;
+    yoffset = 0.0;
+    t->centeredxy = 0;
   }
 
-  if (vertically != 0) {
+  if (input->vertically == 1) {
     t->x = d + xoffset;
     t->y += yoffset;
   } else {
@@ -225,28 +218,44 @@ static void secondWalk(tree_t *t, int vertically, int centeredxy, double modsum_
 
   addChildSpacing(t);
   
-  if (cb != NULL) cb (t, t->x, t->y, t->w, t->h, userdata);
+  if (input->walkcb != NULL) input->walkcb (t, input->walkud);
   
-  for(int i = 0 ; i < t->cs ; i++) secondWalk(t->c[i], vertically, centeredxy, modsum, userdata, cb);
+  for(int i = 0 ; i < t->cs ; i++) secondWalk(input, t->c[i], modsum);
 }
 
-static void setupWalk (tree_t *t, int level, int vertically) {
+static void setupWalk (treeinput_t * input, tree_t *t, int level) {
+
   t->level = level;
-  double b = bottom (t, vertically);
+  t->centeredxy = 0;    // initially the algorithm requires to play top-left wise coordinates.
+  
+  int nextlevel = level + 1;
+
+  double b = bottom (t, input->vertically);
+  
   for(int i = 0; i < t->cs; i++) {
     tree_t *child = t->c[i];
 
     child->childno = i;
     child->p = t;
     
-    if (vertically != 0) child->y += b; else child->x += b;
+    if (input->vertically == 1) child->y += b; else child->x += b;
     
-    setupWalk (child, level + 1, vertically);
+    setupWalk (input, child, nextlevel);
   }
 }
 
-EXPORT void CallingConvention layout(tree_t *t, int vertically, int centeredxy, void *userdata, callback_t firstcb, callback_t secondcb, contourpairs_t pairscb){
-  setupWalk (t, 0, vertically);
-  firstWalk(t, vertically, centeredxy, userdata, firstcb, pairscb);
-  secondWalk(t, vertically, centeredxy, 0.0, userdata, secondcb);
+EXPORT void CallingConvention layout(treeinput_t * input){
+  setupWalk (input, input->t, 0);
+  firstWalk (input, input->t);
+  secondWalk(input, input->t, input->mod);
+}
+
+EXPORT void CallingConvention  free_tree (tree_t *t) {
+
+	t->el = t->er = t->tl = t->tr = t->p = NULL;
+
+	for (int i = 0; i < t->cs; i++) free_tree (t->c[i]);
+
+	free (t->c);
+	free (t);
 }

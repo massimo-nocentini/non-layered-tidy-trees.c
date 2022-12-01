@@ -23,7 +23,7 @@ typedef struct tree_s {
   int idx;
   int level;
   int childno;
-  int centeredxy;
+  int centeredxy;               // relates `x` and `y` to `w` and `h`, respectively.
   double w, h;                  // Width and height.
   double x, y, prelim, mod, shift, change;
   struct tree_s *tl;
@@ -35,19 +35,29 @@ typedef struct tree_s {
   struct tree_s *p;             // my parent.
 } tree_t;
 
-/*
- * A linked list of the indexes of left siblings and their lowest vertical coordinate.
- */
-typedef struct chain_s { 
-  double low; 
-  int index; 
-  struct chain_s *nxt;
-} chain_t;
-
-typedef void (*callback_t) (tree_t *, double, double, double, double, void *);
+typedef void (*callback_t) (tree_t *, void *);
 
 typedef void (*contourpairs_t) (tree_t *, tree_t *, double, void *);
 
-EXPORT void CallingConvention layout(tree_t *, int, int, void *, callback_t, callback_t, contourpairs_t);
+typedef struct treeinput_s {
+
+  tree_t *t; 
+  
+  int vertically;
+  int centeredxy; 
+  
+  void *walkud;
+  callback_t walkcb;
+  
+  void *cpairsud;
+  contourpairs_t cpairscb;
+
+  double mod;
+
+} treeinput_t;
+
+EXPORT void CallingConvention layout(treeinput_t *);
 
 EXPORT double CallingConvention bottom(tree_t *, int);
+
+EXPORT void CallingConvention  free_tree (tree_t *);
