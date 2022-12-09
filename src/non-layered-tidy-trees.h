@@ -24,7 +24,8 @@ typedef struct tree_s {
   int level;
   int childno;
   int centeredxy;               // relates `x` and `y` to `w` and `h`, respectively.
-  double w, h;                  // Width and height.
+  int isdummy;
+  double w, h, margin;          // Width and height.
   double x, y, prelim, mod, shift, change;
   struct tree_s *tl;
   struct tree_s *tr;            // Left and right thread.
