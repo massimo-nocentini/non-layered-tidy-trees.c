@@ -111,7 +111,7 @@ static void setRightThread(tree_t *t, int i, tree_t *sr, double modsumsr) {
 
 static void separate(treeinput_t * input, tree_t *t, int i, chain_t *init) {
   
-  tree_t *sr = t->c[i-1];
+  tree_t *sr = t->c[i - 1];
   double mssr = sr->mod;
 
   tree_t *cl = t->c[i];
@@ -191,8 +191,8 @@ static void firstWalk(treeinput_t * input, tree_t * t) {
 }
 
 static void secondWalk(treeinput_t * input, tree_t *t, double modsum_init) {
-  double modsum = modsum_init + t->mod;
-
+  
+  double modsum = modsum_init + t->mod;   // keep it for the recursive call at the end.
   double d = t->prelim + modsum;
 
   double xoffset, yoffset;
@@ -225,15 +225,15 @@ static void secondWalk(treeinput_t * input, tree_t *t, double modsum_init) {
 static void setupWalk (treeinput_t * input, tree_t *t, int level) {
 
   t->level = level;
-  t->centeredxy = 0;    // initially the algorithm requires to play top-left wise coordinates.
+  t->centeredxy = 0;    // initially the algorithm requires top-left wise coordinates.
   
   int nextlevel = level + 1;
 
   double b = bottom (t, input->vertically);
   
   for(int i = 0; i < t->cs; i++) {
-    tree_t *child = t->c[i];
 
+    tree_t *child = t->c[i];
     child->childno = i;
     child->p = t;
     
@@ -251,7 +251,7 @@ EXPORT void CallingConvention layout(treeinput_t * input){
 
 EXPORT void CallingConvention  free_tree (tree_t *t) {
 
-	t->el = t->er = t->tl = t->tr = t->p = NULL;
+	t->el = t->er = t->tl = t->tr = t->p = NULL;    // disconnect some links.
 
 	for (int i = 0; i < t->cs; i++) free_tree (t->c[i]);
 
