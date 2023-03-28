@@ -1,12 +1,12 @@
 
 linux:
-	gcc -O2 -fPIC -Wall -s -shared -o libnonlayeredtidytrees.so non-layered-tidy-trees.c
+	gcc -O2 -fPIC -Wall -shared -o libnonlayeredtidytrees.so non-layered-tidy-trees.c
 
 macos:
 	gcc -O2 -fPIC -Wall -dynamiclib -o libnonlayeredtidytrees.dylib non-layered-tidy-trees.c
 
 mingw:
-	gcc -O2 -fPIC -Wall -s -shared -o libnonlayeredtidytrees.dll non-layered-tidy-trees.c
+	gcc -O2 -fPIC -Wall -shared -o libnonlayeredtidytrees.dll non-layered-tidy-trees.c
 
 install:
 	cp non-layered-tidy-trees.h /usr/local/include/

@@ -58,23 +58,6 @@ EXPORT double CallingConvention bottom(tree_t *t, int vertically)
   return vertically != 0 ? t->y + (t->centeredxy == 1 ? t->h / 2.0 : t->h) : t->x + (t->centeredxy == 1 ? t->w / 2.0 : t->w);
 }
 
-static void setExtremes(tree_t *t)
-{
-  if (t->cs == 0)
-  {
-    t->el = t;
-    t->er = t;
-    t->msel = t->mser = 0.0;
-  }
-  else
-  {
-    t->el = t->c[0]->el;
-    t->msel = t->c[0]->msel;
-    t->er = t->c[t->cs - 1]->er;
-    t->mser = t->c[t->cs - 1]->mser;
-  }
-}
-
 static void distributeExtra(tree_t *t, int i, int si, double dist)
 {
   if (si != i - 1)
@@ -194,14 +177,15 @@ static void positionRoot(tree_t *t, int vertically)
 
 static void firstWalk(treeinput_t *input, tree_t *t)
 {
-
   if (t->cs == 0)
   {
-    setExtremes(t);
+    // setting extremes
+    t->el = t;
+    t->er = t;
+    t->msel = t->mser = 0.0;
   }
   else
   {
-
     firstWalk(input, t->c[0]);
 
     chain_t *ih = update_chain(bottom(t->c[0]->el, input->vertically), 0, NULL);
@@ -222,7 +206,11 @@ static void firstWalk(treeinput_t *input, tree_t *t)
 
     positionRoot(t, input->vertically);
 
-    setExtremes(t);
+    // setting extremes
+    t->el = t->c[0]->el;
+    t->msel = t->c[0]->msel;
+    t->er = t->c[t->cs - 1]->er;
+    t->mser = t->c[t->cs - 1]->mser;
   }
 }
 
@@ -307,12 +295,15 @@ EXPORT void CallingConvention layout(treeinput_t *input)
   firstWalk(input, input->t);
   secondWalk(input, input->t, 0.0);
 
-  double dx, dy;
+  if (input->x != 0 && input->y != 0)
+  {
+    double dx, dy;
 
-  dx = input->t->x - input->x;
-  dy = input->t->y - input->y;
+    dx = input->t->x - input->x;
+    dy = input->t->y - input->y;
 
-  thirdWalk(input, input->t, dx, dy);
+    thirdWalk(input, input->t, dx, dy);
+  }
 }
 
 EXPORT void CallingConvention free_tree(tree_t *t)
