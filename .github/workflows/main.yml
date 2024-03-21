@@ -29,9 +29,13 @@ jobs:
             mingw-w64-ucrt-x86_64-toolchain
       - uses: actions/checkout@v4
       - shell: msys2 {0}
-        run: cd src && make mingw
+        run: |
+          ls
+          cd src
+          make mingw
       - shell: msys2 {0}
-        run: mkdir artifacts && cp src/*.h src/*.dll artifacts/
+        run: |
+          mkdir artifacts && cp src/*.h src/*.dll artifacts/
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
