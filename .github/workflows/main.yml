@@ -26,6 +26,7 @@ jobs:
           install: >-
             curl
             git
+            zip
             mingw-w64-ucrt-x86_64-toolchain
       - uses: actions/checkout@v4
       - shell: msys2 {0}
@@ -35,6 +36,10 @@ jobs:
       - shell: msys2 {0}
         run: |
           mkdir artifacts && cp src/*.h src/*.dll artifacts/
+          zip -r windows-ucrt64.zip artifacts
+          gh release upload ${{github.event.release.tag_name}} windows-ucrt64.zip
+        env:
+          GITHUB_TOKEN: ${{ github.TOKEN }}
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
