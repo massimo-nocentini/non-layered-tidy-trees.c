@@ -1,5 +1,4 @@
-name: CI
-run-name: ${{ github.actor }} is learning GitHub Actions
+name: Continuous integration
 on: [push]
 jobs:
   linux-ubuntu:
@@ -7,3 +6,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - run: cd src && make
+      - run: mkdir artifact && cp *.h *.so artifact/
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-artifacts
+          path: artifacts
