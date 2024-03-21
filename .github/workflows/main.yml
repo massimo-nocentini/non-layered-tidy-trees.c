@@ -12,3 +12,27 @@ jobs:
         with:
           name: ubuntu-artifacts
           path: artifacts
+
+  windows:
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: msys2 {0}
+    steps:
+      - uses: msys2/setup-msys2@v2
+        with:
+          update: true
+          msystem: UCRT64
+          install: >-
+            curl
+            git
+            mingw-w64-ucrt-x86_64-toolchain
+      - uses: actions/checkout@v4
+      - run: cd src && make mingw
+      - run: mkdir artifacts && cp src/*.h src/*.dll artifacts/
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-artifacts
+          path: artifacts
+        
