@@ -47,7 +47,7 @@ void layout(treeinput_t *);
 double bottom(tree_t *, int);
 void free_tree(tree_t *);
 tree_t *init_tree(int, double, double, double, int, int);
-tree_t **reifyflatchunks(int, double *, double *, int *, int);
+tree_t **reifyflatchunks(int, double *, double *, int *, int, tree_t **);
 void flat_xywh_into(tree_t *, double *);
 void flat_xy_into(int, tree_t **, double *);
 

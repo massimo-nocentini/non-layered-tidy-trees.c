@@ -432,8 +432,7 @@ void maxbottombetween(tree_t *from, tree_t *to, fringemaxbottom_t *ud)
     maxbottombetween(p, to, ud);
 }
 
-
-tree_t **reifyflatchunks(int n, double *wh, double *whg, int *children, int rooti)
+tree_t **reifyflatchunks(int n, double *wh, double *whg, int *children, int rooti, tree_t **root)
 {
 
   int i, j;
@@ -457,6 +456,8 @@ tree_t **reifyflatchunks(int n, double *wh, double *whg, int *children, int root
   for (i = 0; i < n; i++)
     for (node = nodes[i], j = 0; j < node->cs; j++, nedges++)
       node->c[j] = nodes[children[nedges] - 1 + n];
+
+  *root = nodes[rooti + n];
 
   return nodes;
 }
