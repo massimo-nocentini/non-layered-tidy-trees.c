@@ -6,9 +6,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - run: cd src && make
-      - run: mkdir artifact && cp src/*.h src/*.so artifact/
+      - run: mkdir artifacts && cp src/*.h src/*.so artifact/
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: build-artifacts
-          path: artifact
+          name: ubuntu-artifacts
+          path: artifacts
