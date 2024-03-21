@@ -6,7 +6,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - run: cd src && make
-      - run: mkdir artifacts && cp src/*.h src/*.so artifact/
+      - run: mkdir artifacts && cp src/*.h src/*.so artifacts/
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
