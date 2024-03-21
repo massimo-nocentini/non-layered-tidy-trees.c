@@ -14,14 +14,14 @@ typedef struct chain_s
   struct chain_s *nxt;
 } chain_t;
 
-static void free_chain(chain_t *c)
+void free_chain(chain_t *c)
 {
   if (c->nxt != NULL)
     free_chain(c->nxt);
   free(c);
 }
 
-static chain_t *update_chain(double min, int i, chain_t *init)
+chain_t *update_chain(double min, int i, chain_t *init)
 {
 
   chain_t *ih = init;
@@ -42,7 +42,7 @@ static chain_t *update_chain(double min, int i, chain_t *init)
 }
 
 // Process change and shift to add intermediate spacing to mod.
-static void addChildSpacing(tree_t *t)
+void addChildSpacing(tree_t *t)
 {
   double d = 0.0, modsumdelta = 0.0;
   for (int i = 0; i < t->cs; i++)
@@ -53,15 +53,19 @@ static void addChildSpacing(tree_t *t)
   }
 }
 
-EXPORT double CallingConvention bottom(tree_t *t, int vertically)
+double bottom(tree_t *t, int vertically)
 {
   return vertically != 0 ? t->y + (t->centeredxy == 1 ? t->h / 2.0 : t->h) : t->x + (t->centeredxy == 1 ? t->w / 2.0 : t->w);
 }
 
-static void distributeExtra(tree_t *t, int i, int si, double dist)
+void moveSubtree(tree_t *t, int i, int si, double dist)
 {
-  if (si != i - 1)
-  { // Are there intermediate children?
+  t->c[i]->mod += dist;
+  t->c[i]->msel += dist;
+  t->c[i]->mser += dist;
+
+  if (si != i - 1) // Are there intermediate children?
+  {
     double nr = i - si;
     double ratio = dist / nr;
     t->c[si + 1]->shift += ratio;
@@ -70,18 +74,11 @@ static void distributeExtra(tree_t *t, int i, int si, double dist)
   }
 }
 
-static void moveSubtree(tree_t *t, int i, int si, double dist)
-{
-  t->c[i]->mod += dist;
-  t->c[i]->msel += dist;
-  t->c[i]->mser += dist;
-  distributeExtra(t, i, si, dist);
-}
+tree_t *nextLeftContour(tree_t *t) { return t->cs == 0 ? t->tl : t->c[0]; }
 
-static tree_t *nextLeftContour(tree_t *t) { return t->cs == 0 ? t->tl : t->c[0]; }
-static tree_t *nextRightContour(tree_t *t) { return t->cs == 0 ? t->tr : t->c[t->cs - 1]; }
+tree_t *nextRightContour(tree_t *t) { return t->cs == 0 ? t->tr : t->c[t->cs - 1]; }
 
-static void setLeftThread(tree_t *t, int i, tree_t *cl, double modsumcl)
+void setLeftThread(tree_t *t, int i, tree_t *cl, double modsumcl)
 {
   tree_t *li = t->c[0]->el;
   li->tl = cl;
@@ -99,7 +96,7 @@ static void setLeftThread(tree_t *t, int i, tree_t *cl, double modsumcl)
 }
 
 // Symmetrical to `setLeftThread`.
-static void setRightThread(tree_t *t, int i, tree_t *sr, double modsumsr)
+void setRightThread(tree_t *t, int i, tree_t *sr, double modsumsr)
 {
   tree_t *ri = t->c[i]->er;
   ri->tr = sr;
@@ -110,7 +107,7 @@ static void setRightThread(tree_t *t, int i, tree_t *sr, double modsumsr)
   t->c[i]->mser = t->c[i - 1]->mser;
 }
 
-static void separate(treeinput_t *input, tree_t *t, int i, chain_t *init)
+void separate(treeinput_t *input, tree_t *t, int i, chain_t *init)
 {
 
   tree_t *sr = t->c[i - 1];
@@ -167,7 +164,7 @@ static void separate(treeinput_t *input, tree_t *t, int i, chain_t *init)
     setRightThread(t, i, sr, mssr);
 }
 
-static void positionRoot(tree_t *t, int vertically)
+void positionRoot(tree_t *t, int vertically)
 {
   // Position root between children, taking into account their mod.
   int last = t->cs - 1;
@@ -175,7 +172,7 @@ static void positionRoot(tree_t *t, int vertically)
   t->prelim = (t->c[0]->prelim + t->c[0]->mod + t->c[last]->prelim + t->c[last]->mod + d) / 2.0;
 }
 
-static void firstWalk(treeinput_t *input, tree_t *t)
+void firstWalk(treeinput_t *input, tree_t *t)
 {
   if (t->cs == 0)
   {
@@ -214,7 +211,7 @@ static void firstWalk(treeinput_t *input, tree_t *t)
   }
 }
 
-static void secondWalk(treeinput_t *input, tree_t *t, double modsum_init)
+void secondWalk(treeinput_t *input, tree_t *t, double modsum_init)
 {
 
   double modsum = modsum_init + t->mod; // keep it for the recursive call at the end.
@@ -255,7 +252,7 @@ static void secondWalk(treeinput_t *input, tree_t *t, double modsum_init)
     secondWalk(input, t->c[i], modsum);
 }
 
-static void setupWalk(treeinput_t *input, tree_t *t, int level)
+void setupWalk(treeinput_t *input, tree_t *t, int level)
 {
 
   t->level = level;
@@ -280,7 +277,7 @@ static void setupWalk(treeinput_t *input, tree_t *t, int level)
   }
 }
 
-static void thirdWalk(treeinput_t *input, tree_t *t, double dx, double dy)
+void thirdWalk(treeinput_t *input, tree_t *t, double dx, double dy)
 {
   t->x -= dx;
   t->y -= dy;
@@ -289,7 +286,7 @@ static void thirdWalk(treeinput_t *input, tree_t *t, double dx, double dy)
     thirdWalk(input, t->c[i], dx, dy);
 }
 
-EXPORT void CallingConvention layout(treeinput_t *input)
+void layout(treeinput_t *input)
 {
   setupWalk(input, input->t, 0);
   firstWalk(input, input->t);
@@ -306,7 +303,7 @@ EXPORT void CallingConvention layout(treeinput_t *input)
   }
 }
 
-EXPORT void CallingConvention free_tree(tree_t *t)
+void free_tree(tree_t *t)
 {
   t->el = t->er = t->tl = t->tr = t->p = NULL; // disconnect some links.
 
@@ -315,4 +312,151 @@ EXPORT void CallingConvention free_tree(tree_t *t)
 
   free(t->c);
   free(t);
+}
+
+tree_t *init_tree(int idx, double w, double h, double m, int cs, int isdummy)
+{
+  tree_t *t = (tree_t *)malloc(sizeof(tree_t));
+
+  t->idx = idx;
+  t->w = w;
+  t->h = h;
+  t->margin = m;
+  t->isdummy = isdummy;
+
+  t->x = 0.0;
+  t->y = 0.0;
+
+  t->prelim = 0.0;
+  t->mod = 0.0;
+  t->shift = 0.0;
+  t->change = 0.0;
+  t->msel = 0.0;
+  t->mser = 0.0;
+
+  t->tl = NULL;
+  t->tr = NULL;
+  t->el = NULL;
+  t->er = NULL;
+
+  t->p = NULL;
+
+  t->cs = cs;
+  t->c = cs == 0 ? NULL : (tree_t **)malloc(sizeof(tree_t *) * cs);
+
+  /* Those two will be computed by the algorithm. */
+  t->level = -1;
+  t->childno = -1;
+  t->centeredxy = -1;
+
+  return t;
+}
+
+void flat_xywh_into(tree_t *t, double *array)
+{
+
+  for (int i = 0; i < t->cs; i++)
+    flat_xywh_into(t->c[i], array);
+
+  int idx = (t->idx - 1) * 4;
+
+  array[idx] = t->x;
+  array[idx + 1] = t->y;
+  array[idx + 2] = t->w;
+  array[idx + 3] = t->h;
+}
+
+void flat_xy_into(int n, tree_t **nodes, double *xy)
+{
+
+  tree_t *node;
+
+  for (int i = 0; i < n; i++)
+  {
+    node = nodes[i];
+
+    xy[node->idx - 1] = node->x;
+    xy[node->idx - 1 + n] = node->y;
+  }
+}
+
+double maxbottom(tree_t *t, tree_t *to, int vertically, int *found)
+{
+
+  double b;
+  double m = bottom(t, vertically);
+
+  for (int i = 0; !*found && i < t->cs; i++)
+  {
+    tree_t *child = t->c[i];
+    if (child == to)
+    {
+      *found = 1;
+      return m;
+    }
+    b = maxbottom(child, to, vertically, found);
+    m = b > m ? b : m;
+  }
+
+  return m;
+}
+
+void maxbottombetween(tree_t *from, tree_t *to, fringemaxbottom_t *ud)
+{
+
+  double b;
+  tree_t *p = from->p;
+
+  if (p == NULL)
+    return;
+
+  int found = 0;
+
+  for (int i = from->childno + 1; !found && i < p->cs; i++)
+  {
+
+    tree_t *child = p->c[i];
+
+    if (child == to)
+    {
+      found = 1;
+      break;
+    }
+
+    b = maxbottom(child, to, ud->vertically, &found);
+
+    ud->bottom = b > ud->bottom ? b : ud->bottom;
+  }
+
+  if (!found)
+    maxbottombetween(p, to, ud);
+}
+
+
+tree_t **reifyflatchunks(int n, double *wh, double *whg, int *children, int rooti)
+{
+
+  int i, j;
+
+  tree_t *node; // auxiliary variable to reference newly allocated memory locations.
+
+  tree_t **nodes = (tree_t **)malloc(sizeof(tree_t *) * n * 2);
+
+  for (i = 0; i < n; i++)
+  {
+    node = init_tree(i + 1, wh[i], wh[i + n], wh[i + 2 * n], children[i], 0);
+    nodes[i] = node; // the node with the content.
+
+    node = init_tree(i + 1 + n, whg[i], whg[i + n], 0.0, 1, 1);
+    node->c[0] = nodes[i];
+    nodes[i + n] = node; // the node that separates.
+  }
+
+  int nedges = n;
+
+  for (i = 0; i < n; i++)
+    for (node = nodes[i], j = 0; j < node->cs; j++, nedges++)
+      node->c[j] = nodes[children[nedges] - 1 + n];
+
+  return nodes;
 }

@@ -1,19 +1,4 @@
 
-#ifdef _WIN32
-#define EXPORT __declspec(dllexport)
-#else
-#define EXPORT __attribute__((visibility("default")))
-#endif
-
-#ifdef _WIN32
-#if defined __LP64__ || defined _WIN64
-#define CallingConvention __attribute__((ms_abi))
-#else
-#define CallingConvention __stdcall
-#endif
-#else
-#define CallingConvention
-#endif
 
 /*
  * A type for hierarchies that act as trees.
@@ -58,8 +43,19 @@ typedef struct treeinput_s
 
 } treeinput_t;
 
-EXPORT void CallingConvention layout(treeinput_t *);
+void layout(treeinput_t *);
+double bottom(tree_t *, int);
+void free_tree(tree_t *);
+tree_t *init_tree(int, double, double, double, int, int);
+tree_t **reifyflatchunks(int, double *, double *, int *, int);
+void flat_xywh_into(tree_t *, double *);
+void flat_xy_into(int, tree_t **, double *);
 
-EXPORT double CallingConvention bottom(tree_t *, int);
+typedef struct fringemaxbottom_s
+{
+  double bottom;
+  int vertically;
+} fringemaxbottom_t;
 
-EXPORT void CallingConvention free_tree(tree_t *);
+double maxbottom(tree_t *, tree_t *, int, int *);
+void maxbottombetween(tree_t *, tree_t *, fringemaxbottom_t *);
