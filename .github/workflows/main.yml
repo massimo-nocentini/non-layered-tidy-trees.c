@@ -17,7 +17,7 @@ jobs:
       - name: Upload release assets
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: gh release create ${{github.base_ref}} --latest ubuntu.zip
+        run: gh release create ${{github.base_ref}} ubuntu.zip
 
   windows:
     runs-on: windows-latest
