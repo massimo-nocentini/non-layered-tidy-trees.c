@@ -8,7 +8,7 @@ jobs:
       - run: cd src && make
       - run: |
           mkdir artifacts && cp src/*.h src/*.so artifacts/
-          zip -r artifacts.zip artifacts
+          zip -r ubuntu.zip artifacts
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
@@ -17,7 +17,7 @@ jobs:
       - name: Upload release assets
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: gh release create --latest "${{github.sha}}" artifacts.zip
+        run: gh release create --latest ${{github..sha}} ubuntu.zip
 
   windows:
     runs-on: windows-latest
