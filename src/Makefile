@@ -17,5 +17,6 @@ install-macos:
 	mv libnonlayeredtidytrees.dylib /usr/local/lib/
 
 mingw-install:
+	mkdir -p /usr/local/include	# just for ensuring that the dest dir exists
 	cp non-layered-tidy-trees.h /usr/local/include/
 	mv libnonlayeredtidytrees.dll /usr/local/lib/
