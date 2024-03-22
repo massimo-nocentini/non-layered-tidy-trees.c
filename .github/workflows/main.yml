@@ -6,12 +6,18 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - run: cd src && make
-      - run: mkdir artifacts && cp src/*.h src/*.so artifacts/
+      - run: |
+          mkdir artifacts && cp src/*.h src/*.so artifacts/
+          zip -r artifacts.zip artifacts
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
           name: ubuntu
           path: artifacts
+      - name: Upload release assets
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh release upload artifacts.zip
 
   windows:
     runs-on: windows-latest
@@ -37,7 +43,11 @@ jobs:
         run: |
           mkdir artifacts && cp src/*.h src/*.dll artifacts/
           zip -r artifacts.zip artifacts
-      - run: gh release upload ${{ github.run_id }} artifacts.zip
+      - name: Upload release assets
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        shell: cmd
+        run: gh release upload ${{ github.run_id }} artifacts.zip
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
