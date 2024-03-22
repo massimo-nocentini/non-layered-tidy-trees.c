@@ -17,7 +17,7 @@ jobs:
       - name: Upload release assets
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: gh release create Release-${{github.run_number}} ubuntu.zip
+        run: gh release create r${{github.run_number}} ubuntu.zip
 
   windows:
     runs-on: windows-latest
@@ -42,12 +42,12 @@ jobs:
       - shell: msys2 {0}
         run: |
           mkdir artifacts && cp src/*.h src/*.dll artifacts/
-          zip -r artifacts.zip artifacts
+          zip -r win-ucrt64.zip artifacts
       - name: Upload release assets
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         shell: cmd
-        run: gh release upload ${{ github.run_id }} artifacts.zip
+        run: gh release upload r${{github.run_number}} win-ucrt64.zip
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
