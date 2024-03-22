@@ -17,7 +17,7 @@ jobs:
       - name: Upload release assets
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: gh release upload artifacts.zip
+        run: gh release upload "${{github.sha}}" artifacts.zip
 
   windows:
     runs-on: windows-latest
