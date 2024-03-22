@@ -37,7 +37,7 @@ jobs:
         run: |
           mkdir artifacts && cp src/*.h src/*.dll artifacts/
           zip -r artifacts.zip artifacts
-          gh release upload ${{ github.run_id }} artifacts.zip
+      - run: gh release upload ${{ github.run_id }} artifacts.zip
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
