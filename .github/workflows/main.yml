@@ -5,8 +5,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - run: cd src && make
-      - run: |
+      - name: Build
+        run: |
           cd src
           make
           cd ..
@@ -38,7 +38,8 @@ jobs:
             zip
             mingw-w64-ucrt-x86_64-toolchain
       - uses: actions/checkout@v4
-      - shell: msys2 {0}
+      - name: Build
+        shell: msys2 {0}
         run: |
           cd src
           mingw32-make mingw
