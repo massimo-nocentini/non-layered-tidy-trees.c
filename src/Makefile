@@ -18,5 +18,6 @@ install-macos:
 
 mingw-install:
 	mkdir -p /usr/local/include	# just for ensuring that the dest dir exists
+	mkdir -p /usr/local/lib	# just for ensuring that the dest dir exists
 	cp non-layered-tidy-trees.h /usr/local/include/
 	mv libnonlayeredtidytrees.dll /usr/local/lib/
