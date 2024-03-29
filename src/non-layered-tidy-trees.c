@@ -461,3 +461,28 @@ tree_t **reifyflatchunks(int n, double *wh, double *whg, int *children, int root
 
   return nodes;
 }
+
+void layout_api(int n, double *wh, double *whg, int *children, int rooti,
+                int vertically, int centeredxy, double x, double y)
+{
+
+  tree_t *root;
+  tree_t **nodes = reifyflatchunks(n, wh, whg, children, rooti, &root);
+
+  treeinput_t input = {
+      .t = root,
+      .vertically = vertically,
+      .centeredxy = centeredxy,
+      .walkud = NULL,
+      .walkcb = NULL,
+      .cpairsud = NULL,
+      .cpairscb = NULL,
+      .x = x,
+      .y = y};
+
+  layout(&input);
+
+  flat_xy_into(n, nodes, wh);
+
+  free_tree(root);
+}

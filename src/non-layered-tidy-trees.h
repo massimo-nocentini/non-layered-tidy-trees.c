@@ -44,6 +44,7 @@ typedef struct treeinput_s
 } treeinput_t;
 
 void layout(treeinput_t *);
+void layout_api(int, double *, double *, int *, int, int, int, double, double);
 double bottom(tree_t *, int);
 void free_tree(tree_t *);
 tree_t *init_tree(int, double, double, double, int, int);
