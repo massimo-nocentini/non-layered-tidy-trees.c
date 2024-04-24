@@ -467,7 +467,7 @@ void layout_api(int n, double *wh, double *whg, int *children, int rooti,
 {
 
   tree_t *root;
-  tree_t **nodes = reifyflatchunks(n, wh, whg, children, rooti, &root);
+  tree_t **nodes = reifyflatchunks(n, wh, whg, children, rooti - 1, &root);
 
   treeinput_t input = {
       .t = root,

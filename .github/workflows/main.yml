@@ -9,18 +9,11 @@ jobs:
         run: |
           cd src
           make
-          cd ..
-          mkdir artifacts && mv src/*.h src/*.so artifacts/
-        # zip -r ubuntu-latest.zip src/*.h src/*.so
-      - name: Upload artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: ubuntu-latest
-          path: artifacts
-      # - name: Upload release assets
-      #   env:
-      #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      #   run: gh release create r${{github.run_number}} ubuntu-latest.zip
+          zip -r non-layered-tidy-trees-ubuntu.zip *.h *.so
+      - name: Upload release assets
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh release create r${{github.run_number}} src/non-layered-tidy-trees-ubuntu.zip
 
   windows:
     runs-on: windows-latest
@@ -43,17 +36,9 @@ jobs:
         run: |
           cd src
           mingw32-make mingw
-          cd ..
-          mkdir artifacts && mv src/*.h src/*.dll artifacts/
-        # zip -r win-ucrt64.zip artifacts
-      # - name: Upload release assets
-      #   env:
-      #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      #   shell: cmd
-      #   run: gh release upload r${{github.run_number}} win-ucrt64.zip
-      - name: Upload artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: win-ucrt
-          path: artifacts
-        
+          zip -r non-layered-tidy-trees-win-ucrt64.zip *.h *.dll
+      - name: Upload release assets
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        shell: cmd
+        run: gh release upload r${{github.run_number}} src/non-layered-tidy-trees-win-ucrt64.zip
