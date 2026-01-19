@@ -21,3 +21,6 @@ mingw-install:
 	mkdir -p /usr/local/lib	# just for ensuring that the dest dir exists
 	cp non-layered-tidy-trees.h /usr/local/include/
 	mv libnonlayeredtidytrees.dll /usr/local/lib/
+
+emscripten:
+	docker run --rm -v $$(pwd):/src -u $$(id -u):$$(id -g) emscripten/emsdk:latest emcc -O2 -sWASM_BIGINT non-layered-tidy-trees.c -o non-layered-tidy-trees.js
