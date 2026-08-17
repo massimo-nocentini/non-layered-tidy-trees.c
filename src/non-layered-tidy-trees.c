@@ -116,7 +116,9 @@ static void separate(treeinput_t *input, tree_t *t, int i, chain_t *init)
 
   chain_t *ih = init;
 
-  for (int iterations = 0; sr != NULL && cl != NULL; iterations++)
+  int first = 1;
+
+  while (sr != NULL && cl != NULL)
   {
 
     if (bottom(sr, input->vertically) > ih->low)
@@ -126,11 +128,15 @@ static void separate(treeinput_t *input, tree_t *t, int i, chain_t *init)
     double srd = input->vertically != 0 ? sr->w : sr->h;
     double dist = (mssr + sr->prelim + srd + sr->margin) - (mscl + cl->prelim);
 
-    if (dist > 0.0 || (iterations == 0 && dist < 0.0))
+    // Pulling the subtree closer is only sound for the topmost pair of contour
+    // nodes, hence `first` has to fall on every iteration, moving or not.
+    if ((first && dist < 0.0) || dist > 0.0)
     {
       mscl += dist;
       moveSubtree(t, i, ih->index, dist);
     }
+
+    first = 0;
 
     if (input->cpairscb != NULL)
       input->cpairscb(sr, cl, dist, input->cpairsud);
