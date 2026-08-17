@@ -1,0 +1,11 @@
+# test binaries and local artifacts
+overlap
+regression
+properties
+callbacks
+flatapi
+depth
+*.san
+*.dSYM/
+golden.txt
+golden.txt.new
