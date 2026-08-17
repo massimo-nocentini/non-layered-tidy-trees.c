@@ -1,7 +1,5 @@
 
-#include <stdio.h>
 #include <stdlib.h>
-#include <assert.h>
 #include "non-layered-tidy-trees.h"
 
 /*
@@ -14,14 +12,14 @@ typedef struct chain_s
   struct chain_s *nxt;
 } chain_t;
 
-void free_chain(chain_t *c)
+static void free_chain(chain_t *c)
 {
   if (c->nxt != NULL)
     free_chain(c->nxt);
   free(c);
 }
 
-chain_t *update_chain(double min, int i, chain_t *init)
+static chain_t *update_chain(double min, int i, chain_t *init)
 {
 
   chain_t *ih = init;
@@ -42,7 +40,7 @@ chain_t *update_chain(double min, int i, chain_t *init)
 }
 
 // Process change and shift to add intermediate spacing to mod.
-void addChildSpacing(tree_t *t)
+static void addChildSpacing(tree_t *t)
 {
   double d = 0.0, modsumdelta = 0.0;
   for (int i = 0; i < t->cs; i++)
@@ -58,7 +56,7 @@ double bottom(tree_t *t, int vertically)
   return vertically != 0 ? t->y + (t->centeredxy == 1 ? t->h / 2.0 : t->h) : t->x + (t->centeredxy == 1 ? t->w / 2.0 : t->w);
 }
 
-void moveSubtree(tree_t *t, int i, int si, double dist)
+static void moveSubtree(tree_t *t, int i, int si, double dist)
 {
   t->c[i]->mod += dist;
   t->c[i]->msel += dist;
@@ -74,11 +72,11 @@ void moveSubtree(tree_t *t, int i, int si, double dist)
   }
 }
 
-tree_t *nextLeftContour(tree_t *t) { return t->cs == 0 ? t->tl : t->c[0]; }
+static tree_t *nextLeftContour(tree_t *t) { return t->cs == 0 ? t->tl : t->c[0]; }
 
-tree_t *nextRightContour(tree_t *t) { return t->cs == 0 ? t->tr : t->c[t->cs - 1]; }
+static tree_t *nextRightContour(tree_t *t) { return t->cs == 0 ? t->tr : t->c[t->cs - 1]; }
 
-void setLeftThread(tree_t *t, int i, tree_t *cl, double modsumcl)
+static void setLeftThread(tree_t *t, int i, tree_t *cl, double modsumcl)
 {
   tree_t *li = t->c[0]->el;
   li->tl = cl;
@@ -96,7 +94,7 @@ void setLeftThread(tree_t *t, int i, tree_t *cl, double modsumcl)
 }
 
 // Symmetrical to `setLeftThread`.
-void setRightThread(tree_t *t, int i, tree_t *sr, double modsumsr)
+static void setRightThread(tree_t *t, int i, tree_t *sr, double modsumsr)
 {
   tree_t *ri = t->c[i]->er;
   ri->tr = sr;
@@ -107,7 +105,7 @@ void setRightThread(tree_t *t, int i, tree_t *sr, double modsumsr)
   t->c[i]->mser = t->c[i - 1]->mser;
 }
 
-void separate(treeinput_t *input, tree_t *t, int i, chain_t *init)
+static void separate(treeinput_t *input, tree_t *t, int i, chain_t *init)
 {
 
   tree_t *sr = t->c[i - 1];
@@ -164,7 +162,7 @@ void separate(treeinput_t *input, tree_t *t, int i, chain_t *init)
     setRightThread(t, i, sr, mssr);
 }
 
-void positionRoot(tree_t *t, int vertically)
+static void positionRoot(tree_t *t, int vertically)
 {
   // Position root between children, taking into account their mod.
   int last = t->cs - 1;
@@ -172,7 +170,7 @@ void positionRoot(tree_t *t, int vertically)
   t->prelim = (t->c[0]->prelim + t->c[0]->mod + t->c[last]->prelim + t->c[last]->mod + d) / 2.0;
 }
 
-void firstWalk(treeinput_t *input, tree_t *t)
+static void firstWalk(treeinput_t *input, tree_t *t)
 {
   if (t->cs == 0)
   {
@@ -211,7 +209,7 @@ void firstWalk(treeinput_t *input, tree_t *t)
   }
 }
 
-void secondWalk(treeinput_t *input, tree_t *t, double modsum_init)
+static void secondWalk(treeinput_t *input, tree_t *t, double modsum_init)
 {
 
   double modsum = modsum_init + t->mod; // keep it for the recursive call at the end.
@@ -219,7 +217,7 @@ void secondWalk(treeinput_t *input, tree_t *t, double modsum_init)
 
   double xoffset, yoffset;
 
-  if (input->centeredxy == 1)
+  if (input->centeredxy != 0)
   {
     xoffset = t->w / 2.0;
     yoffset = t->h / 2.0;
@@ -232,7 +230,7 @@ void secondWalk(treeinput_t *input, tree_t *t, double modsum_init)
     t->centeredxy = 0;
   }
 
-  if (input->vertically == 1)
+  if (input->vertically != 0)
   {
     t->x = d + xoffset;
     t->y += yoffset;
@@ -252,11 +250,28 @@ void secondWalk(treeinput_t *input, tree_t *t, double modsum_init)
     secondWalk(input, t->c[i], modsum);
 }
 
-void setupWalk(treeinput_t *input, tree_t *t, int level)
+static void setupWalk(treeinput_t *input, tree_t *t, int level)
 {
 
   t->level = level;
   t->centeredxy = 0; // initially the algorithm requires top-left wise coordinates.
+
+  /*
+   * Clear everything the three walks accumulate into, threads included, so that
+   * `layout` can be applied more than once to the same tree; the root starts the
+   * depth axis over at the origin, `input->x` and `input->y` place it elsewhere.
+   */
+  t->prelim = t->mod = t->shift = t->change = 0.0;
+  t->msel = t->mser = 0.0;
+  t->tl = t->tr = t->el = t->er = NULL;
+
+  if (level == 0)
+  {
+    if (input->vertically != 0)
+      t->y = 0.0;
+    else
+      t->x = 0.0;
+  }
 
   int nextlevel = level + 1;
 
@@ -268,16 +283,16 @@ void setupWalk(treeinput_t *input, tree_t *t, int level)
     child->childno = i;
     child->p = t;
 
-    if (input->vertically == 1)
-      child->y += b;
+    if (input->vertically != 0)
+      child->y = b;
     else
-      child->x += b;
+      child->x = b;
 
     setupWalk(input, child, nextlevel);
   }
 }
 
-void thirdWalk(treeinput_t *input, tree_t *t, double dx, double dy)
+static void thirdWalk(treeinput_t *input, tree_t *t, double dx, double dy)
 {
   t->x -= dx;
   t->y -= dy;
@@ -292,12 +307,10 @@ void layout(treeinput_t *input)
   firstWalk(input, input->t);
   secondWalk(input, input->t, 0.0);
 
-  if (input->x != 0 && input->y != 0)
+  if (input->anchor != 0)
   {
-    double dx, dy;
-
-    dx = input->t->x - input->x;
-    dy = input->t->y - input->y;
+    double dx = input->t->x - input->x;
+    double dy = input->t->y - input->y;
 
     thirdWalk(input, input->t, dx, dy);
   }
@@ -463,7 +476,7 @@ tree_t **reifyflatchunks(int n, double *wh, double *whg, int *children, int root
 }
 
 void layout_api(int n, double *wh, double *whg, int *children, int rooti,
-                int vertically, int centeredxy, double x, double y)
+                int vertically, int centeredxy, int anchor, double x, double y)
 {
 
   tree_t *root;
@@ -477,6 +490,7 @@ void layout_api(int n, double *wh, double *whg, int *children, int rooti,
       .walkcb = NULL,
       .cpairsud = NULL,
       .cpairscb = NULL,
+      .anchor = anchor,
       .x = x,
       .y = y};
 
@@ -485,4 +499,5 @@ void layout_api(int n, double *wh, double *whg, int *children, int rooti,
   flat_xy_into(n, nodes, wh);
 
   free_tree(root);
+  free(nodes);
 }

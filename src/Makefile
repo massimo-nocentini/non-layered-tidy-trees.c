@@ -22,5 +22,10 @@ mingw-install:
 	cp non-layered-tidy-trees.h /usr/local/include/
 	mv libnonlayeredtidytrees.dll /usr/local/lib/
 
+# Without an explicit export list there is no `main` to root the call graph, so
+# `-O2` strips the whole library and the resulting module exports nothing usable.
+EMCC_EXPORTS = _layout_api,_malloc,_free
+EMCC_RUNTIME_EXPORTS = ccall,cwrap,HEAPF64,HEAP32
+
 emscripten:
-	docker run --rm -v $$(pwd):/src -u $$(id -u):$$(id -g) emscripten/emsdk:latest emcc -O2 -sWASM_BIGINT non-layered-tidy-trees.c -o non-layered-tidy-trees.js
+	docker run --rm -v $$(pwd):/src -u $$(id -u):$$(id -g) emscripten/emsdk:latest emcc -O2 -sWASM_BIGINT -sEXPORTED_FUNCTIONS=$(EMCC_EXPORTS) -sEXPORTED_RUNTIME_METHODS=$(EMCC_RUNTIME_EXPORTS) non-layered-tidy-trees.c -o non-layered-tidy-trees.js

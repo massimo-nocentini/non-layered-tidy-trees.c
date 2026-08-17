@@ -1,4 +1,6 @@
 
+#ifndef NON_LAYERED_TIDY_TREES_H
+#define NON_LAYERED_TIDY_TREES_H
 
 /*
  * A type for hierarchies that act as trees.
@@ -39,12 +41,14 @@ typedef struct treeinput_s
   void *cpairsud;
   contourpairs_t cpairscb;
 
-  double x, y;
+  int anchor;   // when nonzero, translate the layout so that the root lands on `x` and `y`.
+  double x, y;  // meaningful only when `anchor` is nonzero.
 
 } treeinput_t;
 
 void layout(treeinput_t *);
-void layout_api(int, double *, double *, int *, int, int, int, double, double);
+void layout_api(int n, double *wh, double *whg, int *children, int rooti,
+                int vertically, int centeredxy, int anchor, double x, double y);
 double bottom(tree_t *, int);
 void free_tree(tree_t *);
 tree_t *init_tree(int, double, double, double, int, int);
@@ -60,3 +64,5 @@ typedef struct fringemaxbottom_s
 
 double maxbottom(tree_t *, tree_t *, int, int *);
 void maxbottombetween(tree_t *, tree_t *, fringemaxbottom_t *);
+
+#endif /* NON_LAYERED_TIDY_TREES_H */
