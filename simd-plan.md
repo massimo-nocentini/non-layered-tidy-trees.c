@@ -164,6 +164,42 @@ Every step must satisfy all of:
    the claims stay honest.
 7. Deep-chain case that segfaults today (100k depth) completes after step 3.
 
+## Measured: steps 2-4, carried out in the Rust port
+
+The plan above is written for the C. Steps 2, 3 and 4 were carried out in
+[`rust/`](rust) instead — arena struct-of-arrays mirror, level sweeps in place of the five
+recursions, AVX2 kernels on the elementwise ones — because the port already had the
+regression oracle of step 0 and could be compared against the C build coordinate by
+coordinate. Output stayed bit-identical throughout, over all 115 200 trees of
+`test/overlap.c`.
+
+The verdict above survives the experiment. Numbers in ns/node on a Xeon Gold 6238R, one
+tree of a million nodes, from `make -C test bench` and `cargo run --release --features simd
+--bin bench`; the full tables are in [`rust/README.md`](rust/README.md).
+
+| | `layout` | `layout_api` |
+|---|---:|---:|
+| C, `-O2` | **106** | 548 |
+| pointer tree, recursive | 136 | 657 |
+| SoA + level sweeps | 171 | 257 |
+| the same, with AVX2 | 171 | 261 |
+
+- **Step 4 is worth nothing, not single-digit percent.** AVX2 and the scalar kernels are the
+  same speed to within noise. Phase timings say why: `setup` + `second` + `third` are 16.3 ms
+  of 168.6 ms, and they stream over arrays at ~13 GB/s, which is memory bandwidth. `first`,
+  the contour walk, is 57.5 ms on its own and vectorizes at no width — as predicted.
+- **Step 2 pays only where there is no pointer tree to begin with.** For `layout_api`, where
+  the caller hands over arrays and the mirror can be filled straight from them — no nodes,
+  no child lists, no gap-node allocation — it is 2.1x faster than the C. For `layout` over
+  an existing tree, building the mirror and writing back is 56% of the run and the
+  restructuring *loses*: it costs more than the pointer chasing it saves.
+- **Step 3 delivers what it promised.** A 300 000-level chain lays out on a 2 MiB stack.
+  Recursion depth is no longer a limit at all.
+
+If the C takes this route, the payoff to aim at is `layout_api` building the flat mirror
+directly, per step 2's last bullet. `layout` over a caller's `tree_t` graph is unlikely to
+beat what it already does.
+
 ## Non-goals
 
 - Cross-tree SIMD batching — ruled out by the one-large-tree workload.

@@ -16,7 +16,26 @@ use std::fs;
 use std::process::ExitCode;
 
 use non_layered_tidy_trees::treegen::{self, Regime, REGIMES};
-use non_layered_tidy_trees::{layout, Arena, LayoutInput, NodeId};
+use non_layered_tidy_trees::{flat, layout, Arena, LayoutInput, NodeId};
+
+/// Which implementation to dump or check; they all have to agree, bit for bit.
+type Impl = fn(&mut Arena, &LayoutInput);
+
+fn pick(args: &[String]) -> (Impl, &'static str) {
+    if args.iter().any(|a| a == "--simd") {
+        #[cfg(feature = "simd")]
+        return (flat::layout_flat_simd, "flat+simd");
+        #[cfg(not(feature = "simd"))]
+        {
+            eprintln!("built without `--features simd`; falling back to the scalar kernels");
+            return (flat::layout_flat, "flat");
+        }
+    }
+    if args.iter().any(|a| a == "--flat") {
+        return (flat::layout_flat, "flat");
+    }
+    (layout, "recursive")
+}
 
 /// One tree of the corpus, in the order `overlap.c` sweeps them.
 struct Shape {
@@ -69,7 +88,7 @@ fn corpus(trials: usize) -> impl Iterator<Item = Shape> {
     })
 }
 
-fn lay_out(shape: &Shape) -> (Arena, Vec<NodeId>) {
+fn lay_out(shape: &Shape, run: Impl) -> (Arena, Vec<NodeId>) {
     let (mut arena, root) =
         treegen::build(shape.seed(), shape.maxdepth, shape.maxkids, shape.regime);
 
@@ -80,16 +99,16 @@ fn lay_out(shape: &Shape) -> (Arena, Vec<NodeId>) {
         x: 0.0,
         y: 0.0,
     };
-    layout(&mut arena, &input);
+    run(&mut arena, &input);
 
     let nodes = treegen::collect(&arena, root);
     (arena, nodes)
 }
 
-fn dump(trials: usize) {
+fn dump(trials: usize, run: Impl) {
     let mut out = String::new();
     for shape in corpus(trials) {
-        let (arena, nodes) = lay_out(&shape);
+        let (arena, nodes) = lay_out(&shape, run);
         out.push_str(&shape.header(nodes.len()));
         out.push('\n');
         for &id in &nodes {
@@ -105,7 +124,7 @@ fn dump(trials: usize) {
 }
 
 /// Compares the corpus against a dump, value by value; the exit code is the verdict.
-fn check(path: &str, trials: usize) -> ExitCode {
+fn check(path: &str, trials: usize, run: Impl, name: &str) -> ExitCode {
     let text = match fs::read_to_string(path) {
         Ok(t) => t,
         Err(e) => {
@@ -120,7 +139,7 @@ fn check(path: &str, trials: usize) -> ExitCode {
     let mut trees = 0usize;
 
     for shape in corpus(trials) {
-        let (arena, nodes) = lay_out(&shape);
+        let (arena, nodes) = lay_out(&shape, run);
         trees += 1;
 
         let header = match lines.next() {
@@ -165,16 +184,22 @@ fn check(path: &str, trials: usize) -> ExitCode {
     }
 
     if mismatches == 0 {
-        eprintln!("PASS  {compared} coordinates over {trees} trees, identical to {path}");
+        eprintln!("PASS  {compared} coordinates over {trees} trees, {name} identical to {path}");
         ExitCode::SUCCESS
     } else {
-        eprintln!("FAIL  {mismatches} nodes differ from {path} ({compared} coordinates over {trees} trees)");
+        eprintln!("FAIL  {name}: {mismatches} nodes differ from {path} ({compared} coordinates over {trees} trees)");
         ExitCode::FAILURE
     }
 }
 
 fn main() -> ExitCode {
-    let args: Vec<String> = env::args().skip(1).collect();
+    let all: Vec<String> = env::args().skip(1).collect();
+    let (run, name) = pick(&all);
+
+    let args: Vec<String> = all
+        .into_iter()
+        .filter(|a| !matches!(a.as_str(), "--flat" | "--simd"))
+        .collect();
 
     match args.first().map(String::as_str) {
         Some("--check") => {
@@ -186,16 +211,21 @@ fn main() -> ExitCode {
                 }
             };
             let trials = args.get(2).and_then(|t| t.parse().ok()).unwrap_or(300);
-            check(path, trials)
+            check(path, trials, run, name)
         }
         Some("--help") | Some("-h") => {
-            println!("usage: dump [trials]            coordinates on stdout, 300 trials per shape");
-            println!("       dump --check <file> [trials]  compare against a dump of the C build");
+            println!(
+                "usage: dump [trials]                  coordinates on stdout, 300 trials per shape"
+            );
+            println!("       dump --check <file> [trials]   compare against a dump of the C build");
+            println!(
+                "       --flat / --simd                use the sweeps instead of the recursion"
+            );
             ExitCode::SUCCESS
         }
         other => {
             let trials = other.and_then(|t| t.parse().ok()).unwrap_or(300);
-            dump(trials);
+            dump(trials, run);
             ExitCode::SUCCESS
         }
     }

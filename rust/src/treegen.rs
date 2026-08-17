@@ -140,13 +140,103 @@ pub fn build_into(
 }
 
 /// A chain of `depth` nodes, each the only child of the previous one; `tg_chain`.
+///
+/// Built iteratively, where the C recurses: a chain is exactly the shape that would run the
+/// builder out of stack long before the flat layout it is meant to exercise runs out of
+/// anything. The nodes come out in the same order, labelled from `idx`.
 pub fn chain(arena: &mut Arena, idx: usize, depth: usize, w: f64, h: f64) -> NodeId {
-    let t = arena.add_node(idx, w, h, 0.0, false);
-    if depth > 1 {
-        let c = chain(arena, idx + 1, depth - 1, w, h);
-        arena.push_child(t, c);
+    let top = arena.add_node(idx, w, h, 0.0, false);
+
+    let mut prev = top;
+    for k in 1..depth {
+        let node = arena.add_node(idx + k, w, h, 0.0, false);
+        arena.push_child(prev, node);
+        prev = node;
     }
-    t
+
+    top
+}
+
+/// A tree of exactly `n` nodes in breadth-first order; `tg_bench_tree`.
+///
+/// The random trees of [`build`] are the wrong shape for a benchmark: their size is an
+/// outcome rather than an input. Here every node but the root is handed to a parent in
+/// breadth-first order, `1 + rand(maxkids)` at a time, so the size is exact and the shape
+/// is still irregular.
+///
+/// The draws are the same as the C `tg_bench_tree`, in the same order, so both build the
+/// very same tree from a given seed -- which is what makes the two benchmarks comparable.
+pub fn bench_tree(arena: &mut Arena, n: usize, maxkids: usize, seed: u64) -> NodeId {
+    assert!(n > 0, "a tree has at least a root");
+
+    let mut rng = Rng::new(seed);
+
+    let mut counts = vec![0usize; n];
+    let mut remaining = n - 1;
+    let mut i = 0;
+    while remaining > 0 {
+        let c = (1 + rng.rand(maxkids as u64) as usize).min(remaining);
+        counts[i] = c;
+        remaining -= c;
+        i += 1;
+    }
+
+    let ids: Vec<NodeId> = (0..n)
+        .map(|i| {
+            let w = (10 + rng.rand(40)) as f64;
+            let h = (10 + rng.rand(20)) as f64;
+            let m = rng.rand(4) as f64;
+            arena.add_node(i + 1, w, h, m, false)
+        })
+        .collect();
+
+    let mut next = 1;
+    for (i, &count) in counts.iter().enumerate() {
+        for _ in 0..count {
+            arena.push_child(ids[i], ids[next]);
+            next += 1;
+        }
+    }
+
+    ids[0]
+}
+
+/// The same tree as [`bench_tree`], in the parallel arrays [`crate::layout_api`] takes.
+///
+/// Because the generator hands the nodes out in breadth-first order, the adjacency is
+/// simply `2, 3, ..., n`: node 0 takes the first few, node 1 the next few, and so on.
+///
+/// Returns `(wh, whg, children)`; the C `tg_bench_arrays` builds the same three.
+pub fn bench_arrays(n: usize, maxkids: usize, seed: u64) -> (Vec<f64>, Vec<f64>, Vec<usize>) {
+    assert!(n > 0, "a tree has at least a root");
+
+    let mut rng = Rng::new(seed);
+
+    let mut children = vec![0usize; 2 * n - 1];
+    let mut remaining = n - 1;
+    let mut i = 0;
+    while remaining > 0 {
+        let c = (1 + rng.rand(maxkids as u64) as usize).min(remaining);
+        children[i] = c;
+        remaining -= c;
+        i += 1;
+    }
+
+    let mut wh = vec![0.0; 3 * n];
+    let mut whg = vec![0.0; 2 * n];
+    for i in 0..n {
+        wh[i] = (10 + rng.rand(40)) as f64;
+        wh[i + n] = (10 + rng.rand(20)) as f64;
+        wh[i + 2 * n] = rng.rand(4) as f64;
+        whg[i] = wh[i];
+        whg[i + n] = 5.0;
+    }
+
+    for i in 1..n {
+        children[n + i - 1] = i + 1;
+    }
+
+    (wh, whg, children)
 }
 
 /// Gathers the nodes of the subtree in preorder; `tg_collect`.

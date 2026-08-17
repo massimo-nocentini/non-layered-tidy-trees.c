@@ -86,6 +86,86 @@ static inline tree_t *tg_chain(int idx, int depth, double w, double h)
   return t;
 }
 
+/*
+ * A tree of exactly `n` nodes in breadth-first order, for `bench.c`.
+ *
+ * The random trees of `tg_build` are the wrong shape for a benchmark: their size is an
+ * outcome rather than an input.  Here every node but the root is handed to a parent in
+ * breadth-first order, `1 + rand(maxkids)` at a time, so the size is exact and the shape is
+ * still irregular.  `nodes` receives the nodes in that order; the root is `nodes[0]`.
+ *
+ * The draws are the same as the Rust `treegen::bench_tree`, in the same order, so both
+ * build the very same tree from a given seed -- which is what makes the two benchmarks
+ * comparable.
+ */
+static inline tree_t *tg_bench_tree(int n, int maxkids, unsigned long seed, tree_t **nodes)
+{
+  tg_srand(seed);
+
+  int *counts = (int *)calloc((size_t)n, sizeof(int));
+
+  int remaining = n - 1;
+  for (int i = 0; remaining > 0; i++)
+  {
+    int c = 1 + (int)tg_rand((unsigned)maxkids);
+    counts[i] = c < remaining ? c : remaining;
+    remaining -= counts[i];
+  }
+
+  for (int i = 0; i < n; i++)
+  {
+    double w = 10 + tg_rand(40);
+    double h = 10 + tg_rand(20);
+    double m = tg_rand(4);
+    nodes[i] = init_tree(i + 1, w, h, m, counts[i], 0);
+  }
+
+  int next = 1;
+  for (int i = 0; i < n; i++)
+    for (int j = 0; j < counts[i]; j++)
+      nodes[i]->c[j] = nodes[next++];
+
+  free(counts);
+
+  return nodes[0];
+}
+
+/*
+ * The same tree as `tg_bench_tree`, in the parallel arrays `layout_api` takes.
+ *
+ * Because the generator hands the nodes out in breadth-first order, the adjacency is simply
+ * `2, 3, ..., n`: node 0 takes the first few, node 1 the next few, and so on.  `wh` needs
+ * `3n` doubles, `whg` `2n`, and `children` `2n - 1`.
+ */
+static inline void tg_bench_arrays(int n, int maxkids, unsigned long seed,
+                                   double *wh, double *whg, int *children)
+{
+  tg_srand(seed);
+
+  for (int i = 0; i < n; i++)
+    children[i] = 0;
+
+  int remaining = n - 1;
+  for (int i = 0; remaining > 0; i++)
+  {
+    int c = 1 + (int)tg_rand((unsigned)maxkids);
+    children[i] = c < remaining ? c : remaining;
+    remaining -= children[i];
+  }
+
+  for (int i = 0; i < n; i++)
+  {
+    wh[i] = 10 + tg_rand(40);
+    wh[i + n] = 10 + tg_rand(20);
+    wh[i + 2 * n] = tg_rand(4);
+    whg[i] = wh[i];
+    whg[i + n] = 5.0;
+  }
+
+  for (int i = 1; i < n; i++)
+    children[n + i - 1] = i + 1;
+}
+
 static inline int tg_collect_rec(tree_t *t, tree_t **out, int n, int cap)
 {
   if (n < cap)

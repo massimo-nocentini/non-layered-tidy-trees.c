@@ -9,6 +9,7 @@ make check            # build and run everything
 make asan             # the same suite under AddressSanitizer + UBSan + LeakSanitizer
 make check CC=gcc     # or any other compiler
 make wasm             # after `make -C ../src emscripten`
+make bench            # wall clock over one large tree, at the shipped -O2
 ```
 
 ## What each one covers
@@ -21,6 +22,7 @@ make wasm             # after `make -C ../src emscripten`
 | `callbacks.c` | `cpairscb` sees every contour pair `separate` compares (with the trace printed, since it is the only external window onto the contour walk); `walkcb` is called once per node with `walkud` intact, and a coordinate-mutating `walkcb` does not perturb normalization. |
 | `flatapi.c` | `layout_api`, the entry point the FFI and WebAssembly bindings call. Documents the three parallel array layouts, which are otherwise undocumented, and checks that nothing is retained between calls. Run it under `make asan`: it must be leak clean. |
 | `depth.c` | How deep a tree can be laid out. Defaults to a chain of 10 000 levels; pass a depth to probe further. |
+| `bench.c` | Wall clock over one tree of 1k/10k/100k/1M nodes, for `layout` and for `layout_api`, in ns/node. Built at `-O2`, the flag the shipped library uses, rather than the `-O1` of the tests; `make bench BENCH_CFLAGS=-O3` to compare. `rust/src/bin/bench.rs` prints the same table over the same trees — `tg_bench_tree` and `treegen::bench_tree` draw from the same PRNG in the same order — so the rows can be read as one comparison. |
 | `wasm_smoke.js` | That the emscripten module actually exports `layout_api` and returns the same coordinates as the native build. Without an explicit `-sEXPORTED_FUNCTIONS`, `-O2` strips the whole library and the module loads happily while exporting nothing. |
 
 `treegen.h` holds the shared bits: a deterministic PRNG (so a failure reproduces from its

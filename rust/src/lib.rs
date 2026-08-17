@@ -39,6 +39,7 @@
 
 use std::ops::{Index, IndexMut};
 
+pub mod flat;
 pub mod treegen;
 
 /// A handle on a node held by an [`Arena`].

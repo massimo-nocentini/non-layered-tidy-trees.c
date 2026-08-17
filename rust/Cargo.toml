@@ -10,6 +10,12 @@ readme = "README.md"
 keywords = ["tree", "layout", "drawing", "tidy"]
 categories = ["algorithms", "visualization"]
 
+[features]
+# Explicit AVX2 kernels for the elementwise sweeps of `flat`, with runtime detection.
+# Off by default: it is the only `unsafe` in the crate, and `simd-plan.md` explains why
+# the win is small. `cargo bench`-style comparison lives in `src/bin/bench.rs`.
+simd = []
+
 [dependencies]
 
 [profile.test]
