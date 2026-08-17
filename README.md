@@ -12,6 +12,8 @@ According to the issue https://github.com/Klortho/d3-flextree/issues/1, we take 
 
 We provide the [`src/Makefile`](https://github.com/massimo-nocentini/non-layered-tidy-trees.c/blob/master/src/Makefile) to compile and install the artifacts in the usual Unix locations for headers and libraries, and a [`test/`](test) suite that can be run with `make -C test check`.
 
+A port in plain, `unsafe`-free Rust lives in [`rust/`](rust), together with the same test suite. It is numerically identical, not merely equivalent: `cargo run --bin dump -- --check` compares it against a dump of the C build over the whole corpus of [`test/overlap.c`](test/overlap.c), and the coordinates agree bit for bit.
+
 ## Differences with respect to the Java implementation
 
 The core of the algorithm is a faithful translation. `firstWalk`, `separate`, the

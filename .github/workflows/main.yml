@@ -15,6 +15,24 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: gh release create r${{github.run_number}} src/non-layered-tidy-trees-ubuntu.zip
 
+  c:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Test
+        run: make -C test check
+      - name: Sanitizers
+        run: make -C test asan
+
+  rust:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Test
+        run: |
+          cd rust
+          cargo test
+
   windows:
     runs-on: windows-latest
     defaults:

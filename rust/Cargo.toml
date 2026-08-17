@@ -1,0 +1,16 @@
+[package]
+name = "non-layered-tidy-trees"
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.63"
+license = "MIT"
+description = "Drawing non-layered tidy trees in linear time (van der Ploeg, 2014), a port of the C implementation"
+repository = "https://github.com/massimo-nocentini/non-layered-tidy-trees.c"
+readme = "README.md"
+keywords = ["tree", "layout", "drawing", "tidy"]
+categories = ["algorithms", "visualization"]
+
+[dependencies]
+
+[profile.test]
+opt-level = 1
