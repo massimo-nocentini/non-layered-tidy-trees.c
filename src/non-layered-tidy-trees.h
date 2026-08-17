@@ -41,14 +41,13 @@ typedef struct treeinput_s
   void *cpairsud;
   contourpairs_t cpairscb;
 
-  int anchor;   // when nonzero, translate the layout so that the root lands on `x` and `y`.
-  double x, y;  // meaningful only when `anchor` is nonzero.
+  double x, y;
 
 } treeinput_t;
 
 void layout(treeinput_t *);
 void layout_api(int n, double *wh, double *whg, int *children, int rooti,
-                int vertically, int centeredxy, int anchor, double x, double y);
+                int vertically, int centeredxy, double x, double y);
 double bottom(tree_t *, int);
 void free_tree(tree_t *);
 tree_t *init_tree(int, double, double, double, int, int);

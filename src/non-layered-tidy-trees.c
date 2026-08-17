@@ -215,7 +215,7 @@ static void firstWalk(treeinput_t *input, tree_t *t)
   }
 }
 
-static void secondWalk(treeinput_t *input, tree_t *t, double modsum_init)
+static double secondWalk(treeinput_t *input, tree_t *t, double modsum_init)
 {
 
   double modsum = modsum_init + t->mod; // keep it for the recursive call at the end.
@@ -236,15 +236,19 @@ static void secondWalk(treeinput_t *input, tree_t *t, double modsum_init)
     t->centeredxy = 0;
   }
 
+  double best_min = 0.0;
+
   if (input->vertically != 0)
   {
     t->x = d + xoffset;
     t->y += yoffset;
+    best_min = t->x;
   }
   else
   {
     t->x += xoffset;
     t->y = d + yoffset;
+    best_min = t->y;
   }
 
   addChildSpacing(t);
@@ -253,7 +257,12 @@ static void secondWalk(treeinput_t *input, tree_t *t, double modsum_init)
     input->walkcb(t, input->walkud);
 
   for (int i = 0; i < t->cs; i++)
-    secondWalk(input, t->c[i], modsum);
+  {
+    double current_min = secondWalk(input, t->c[i], modsum);
+    best_min = current_min < best_min ? current_min : best_min;
+  }
+
+  return best_min;
 }
 
 static void setupWalk(treeinput_t *input, tree_t *t, int level)
@@ -311,15 +320,16 @@ void layout(treeinput_t *input)
 {
   setupWalk(input, input->t, 0);
   firstWalk(input, input->t);
-  secondWalk(input, input->t, 0.0);
+  double minbreadth = secondWalk(input, input->t, 0.0);
 
-  if (input->anchor != 0)
-  {
-    double dx = input->t->x - input->x;
-    double dy = input->t->y - input->y;
+  // `thirdWalk` subtracts, so subtracting the minimum breadth coordinate is the
+  // counterpart of the reference's `thirdWalk(t, -minX)`: it normalizes the drawing
+  // to start at the origin, which `input->x` and `input->y` then offset.
+  double dx = (input->vertically != 0 ? minbreadth : 0.0) - input->x;
+  double dy = (input->vertically != 0 ? 0.0 : minbreadth) - input->y;
 
+  if (dx != 0.0 || dy != 0.0)
     thirdWalk(input, input->t, dx, dy);
-  }
 }
 
 void free_tree(tree_t *t)
@@ -482,7 +492,7 @@ tree_t **reifyflatchunks(int n, double *wh, double *whg, int *children, int root
 }
 
 void layout_api(int n, double *wh, double *whg, int *children, int rooti,
-                int vertically, int centeredxy, int anchor, double x, double y)
+                int vertically, int centeredxy, double x, double y)
 {
 
   tree_t *root;
@@ -496,7 +506,6 @@ void layout_api(int n, double *wh, double *whg, int *children, int rooti,
       .walkcb = NULL,
       .cpairsud = NULL,
       .cpairscb = NULL,
-      .anchor = anchor,
       .x = x,
       .y = y};
 
